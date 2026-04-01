@@ -436,28 +436,32 @@
             const chunkKeys = index[docId].chunks || [];
             const queryLower = query.toLowerCase();
             
-            // Extract key terms and phrases
+            // Build search terms with weights
             const searchTerms = [];
             
-            // Add the full query as a phrase
-            searchTerms.push({ term: queryLower, weight: 5 });
+            // Full phrase (highest weight)
+            searchTerms.push({ term: queryLower, weight: 10 });
             
-            // Add individual words
-            const words = queryLower.split(/\s+/).filter(w => w.length > 2);
-            words.forEach(w => searchTerms.push({ term: w, weight: 2 }));
+            // Key individual terms with high weights
+            const keyTerms = [
+                { match: 'turb', terms: ['turbulent', 'turbulence', 'turb'], weight: 5 },
+                { match: 'penetr', terms: ['penetration', 'penetrat'], weight: 5 },
+                { match: 'speed', terms: ['speed', 'knots', 'kias', 'mach'], weight: 3 },
+                { match: 'severe', terms: ['severe', 'sever'], weight: 3 },
+            ];
             
-            // Add partial matches for key aviation terms
-            if (queryLower.includes('turb')) {
-                searchTerms.push({ term: 'turbulent', weight: 3 });
-                searchTerms.push({ term: 'turbulence', weight: 3 });
-                searchTerms.push({ term: 'penetration', weight: 2 });
-                searchTerms.push({ term: 'severe', weight: 1 });
+            for (const kt of keyTerms) {
+                if (queryLower.includes(kt.match)) {
+                    for (const t of kt.terms) {
+                        searchTerms.push({ term: t, weight: kt.weight });
+                    }
+                }
             }
-            if (queryLower.includes('speed') || queryLower.includes('knots')) {
-                searchTerms.push({ term: 'knots', weight: 2 });
-                searchTerms.push({ term: 'kias', weight: 2 });
-                searchTerms.push({ term: 'mach', weight: 2 });
-                searchTerms.push({ term: 'speed', weight: 1 });
+            
+            // All query words
+            const words = queryLower.split(/\s+/).filter(w => w.length > 2);
+            for (const w of words) {
+                searchTerms.push({ term: w, weight: 2 });
             }
             
             const scored = [];
@@ -469,28 +473,44 @@
                 
                 let score = 0;
                 let matchedTerms = 0;
+                let matchedWords = new Set();
                 
                 for (const { term, weight } of searchTerms) {
-                    const count = (text.match(new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi')) || []).length;
-                    if (count > 0) {
-                        score += count * weight;
+                    const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const regex = new RegExp(escaped, 'gi');
+                    const matches = text.match(regex);
+                    if (matches && matches.length > 0) {
+                        score += matches.length * weight;
                         matchedTerms++;
+                        matchedWords.add(term);
                     }
                 }
                 
-                // Boost for multiple term matches
-                if (matchedTerms >= 3) score *= 2;
-                if (matchedTerms >= 5) score *= 1.5;
+                // Strong boost for matching multiple distinct terms
+                if (matchedWords.size >= 3) score *= 3;
+                if (matchedWords.size >= 4) score *= 2;
                 
                 if (score > 0) {
-                    scored.push({ ...chunk, score, chunkKey: key, matchedTerms });
+                    scored.push({ 
+                        ...chunk, 
+                        score, 
+                        chunkKey: key, 
+                        matchedTerms,
+                        matchedWords: [...matchedWords]
+                    });
                 }
             }
             
-            // Sort by score and match count
-            return scored
-                .sort((a, b) => b.score - a.score || b.matchedTerms - a.matchedTerms)
-                .slice(0, 10);
+            // Sort by matched terms first, then score
+            scored.sort((a, b) => {
+                // Prioritize chunks that matched more distinct search terms
+                if (b.matchedWords.length !== a.matchedWords.length) {
+                    return b.matchedWords.length - a.matchedWords.length;
+                }
+                return b.score - a.score;
+            });
+            
+            return scored.slice(0, 10);
         }
         
         async function queryAI(query, chunks, history) {
