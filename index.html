@@ -20,17 +20,44 @@
             --efb-danger: #ff4444;
             --efb-success: #00ff88;
         }
-        body { background: var(--efb-bg); color: var(--efb-text); font-family: 'Roboto Mono', 'Consolas', monospace; }
+        body { background: var(--efb-bg); color: var(--efb-text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
         .efb-panel { background: var(--efb-panel); border: 1px solid var(--efb-border); }
         .efb-input { background: #1a1a1a; border: 1px solid var(--efb-border); color: var(--efb-text); }
-        .efb-input:focus { border-color: var(--efb-accent); outline: none; box-shadow: 0 0 10px rgba(0, 191, 255, 0.2); }
-        .efb-btn { background: linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%); border: 1px solid var(--efb-border); color: var(--efb-text); transition: all 0.2s; }
+        .efb-input:focus { border-color: var(--efb-accent); outline: none; }
+        .efb-btn { background: linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%); border: 1px solid var(--efb-border); color: var(--efb-text); transition: all 0.2s; cursor: pointer; }
         .efb-btn:hover { border-color: var(--efb-accent); }
         .efb-btn-primary { background: linear-gradient(180deg, var(--efb-accent) 0%, var(--efb-accent-dim) 100%); border-color: var(--efb-accent); color: #000; font-weight: bold; }
-        .scrollbar-efb::-webkit-scrollbar { width: 8px; }
+        .scrollbar-efb::-webkit-scrollbar { width: 6px; }
         .scrollbar-efb::-webkit-scrollbar-track { background: var(--efb-bg); }
-        .scrollbar-efb::-webkit-scrollbar-thumb { background: var(--efb-border); border-radius: 4px; }
+        .scrollbar-efb::-webkit-scrollbar-thumb { background: var(--efb-border); border-radius: 3px; }
         .section-header { color: var(--efb-accent); font-weight: bold; border-bottom: 1px solid var(--efb-border); padding-bottom: 0.5rem; margin-bottom: 0.5rem; }
+        
+        .chat-container { display: flex; flex-direction: column; height: 100%; }
+        .chat-messages { flex: 1; overflow-y: auto; padding: 1rem; }
+        .chat-input-area { padding: 1rem; border-top: 1px solid var(--efb-border); }
+        
+        .message { margin-bottom: 1rem; max-width: 90%; }
+        .message-user { margin-left: auto; background: var(--efb-accent-dim); color: #fff; padding: 0.75rem 1rem; border-radius: 1rem 1rem 0.25rem 1rem; }
+        .message-assistant { background: #1a1a1a; padding: 1rem; border-radius: 1rem 1rem 1rem 0.25rem; border: 1px solid var(--efb-border); }
+        .message-assistant p { margin: 0.5rem 0; line-height: 1.6; }
+        .message-assistant ul, .message-assistant ol { margin: 0.5rem 0; padding-left: 1.5rem; }
+        .message-assistant li { margin: 0.25rem 0; }
+        .message-assistant strong { color: var(--efb-accent); }
+        .message-assistant code { background: #0a0a0a; padding: 0.125rem 0.375rem; border-radius: 0.25rem; font-size: 0.875rem; }
+        
+        .citation-chip { display: inline-block; background: var(--efb-border); color: var(--efb-accent); padding: 0.125rem 0.5rem; border-radius: 1rem; font-size: 0.75rem; margin: 0.25rem 0.25rem 0.25rem 0; cursor: pointer; }
+        .citation-chip:hover { background: var(--efb-accent-dim); }
+        
+        .source-panel { display: none; margin-top: 1rem; padding: 1rem; background: #0a0a0a; border-radius: 0.5rem; border: 1px solid var(--efb-border); }
+        .source-panel.visible { display: block; }
+        .source-text { font-family: 'Roboto Mono', monospace; font-size: 0.875rem; line-height: 1.5; color: var(--efb-text-dim); white-space: pre-wrap; max-height: 300px; overflow-y: auto; }
+        
+        .typing-indicator { display: flex; gap: 0.25rem; padding: 0.5rem; }
+        .typing-indicator span { width: 8px; height: 8px; background: var(--efb-accent); border-radius: 50%; animation: typing 1.4s infinite; }
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+        
         @keyframes pulse-glow { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
         .status-indicator { animation: pulse-glow 2s infinite; }
         .admin-panel { display: none; }
@@ -39,13 +66,14 @@
 </head>
 <body class="min-h-screen">
     <div class="flex h-screen">
-        <aside class="w-64 efb-panel flex flex-col">
+        <!-- Sidebar -->
+        <aside class="w-64 efb-panel flex flex-col flex-shrink-0">
             <div class="p-4 border-b border-[var(--efb-border)]">
-                <h1 class="text-xl font-bold text-[var(--efb-accent)]">FCOM BASE</h1>
-                <p class="text-xs text-[var(--efb-text-dim)]">Electronic Flight Bag</p>
+                <h1 class="text-xl font-bold text-[var(--efb-accent)]">FCOM AI</h1>
+                <p class="text-xs text-[var(--efb-text-dim)]">Flight Manual Assistant</p>
             </div>
             <div class="p-4 border-b border-[var(--efb-border)]">
-                <label class="block text-xs text-[var(--efb-text-dim)] mb-2">AIRCRAFT TYPE</label>
+                <label class="block text-xs text-[var(--efb-text-dim)] mb-2">AIRCRAFT</label>
                 <select id="aircraft-select" class="w-full efb-input px-3 py-2 rounded">
                     <option value="B777">Boeing 777</option>
                     <option value="A320">Airbus A320</option>
@@ -55,9 +83,9 @@
             <div class="p-4 border-b border-[var(--efb-border)]">
                 <label class="block text-xs text-[var(--efb-text-dim)] mb-2">MANUAL</label>
                 <select id="manual-select" class="w-full efb-input px-3 py-2 rounded">
-                    <option value="FCOM">Flight Crew Operations Manual</option>
-                    <option value="FCTM">Flight Crew Training Manual</option>
-                    <option value="QRH">Quick Reference Handbook</option>
+                    <option value="FCOM">FCOM</option>
+                    <option value="FCTM">FCTM</option>
+                    <option value="QRH">QRH</option>
                 </select>
             </div>
             <div class="p-4 border-b border-[var(--efb-border)]">
@@ -67,34 +95,46 @@
                 </div>
                 <div class="mt-2 text-xs text-[var(--efb-text-dim)]">Chunks: <span id="chunk-count">0</span></div>
             </div>
+            
+            <div class="p-4 border-b border-[var(--efb-border)]">
+                <button id="new-chat-btn" class="w-full efb-btn px-3 py-2 rounded text-sm">+ New Chat</button>
+            </div>
+            
             <div class="mt-auto p-4">
                 <button id="admin-toggle-btn" class="hidden w-full efb-btn px-3 py-2 rounded text-sm">Admin Panel</button>
             </div>
             <div class="p-4 border-t border-[var(--efb-border)]">
-                <p class="text-xs text-[var(--efb-text-dim)]">Logged in as:</p>
+                <p class="text-xs text-[var(--efb-text-dim)]">User:</p>
                 <p id="user-name" class="text-sm truncate">...</p>
             </div>
         </aside>
         
-        <main class="flex-1 flex flex-col">
-            <div class="p-6 efb-panel m-4 rounded-lg">
-                <div class="flex gap-4">
-                    <input type="text" id="query-input" class="flex-1 efb-input px-4 py-3 rounded-lg text-lg" placeholder="Ask about FCOM procedures, limitations, systems..." />
-                    <button id="search-btn" class="efb-btn-primary px-6 py-3 rounded-lg">SEARCH</button>
-                </div>
-            </div>
-            <div class="flex-1 p-4 overflow-hidden">
-                <div id="results-panel" class="h-full efb-panel rounded-lg p-6 overflow-y-auto scrollbar-efb">
+        <!-- Main Chat Area -->
+        <main class="flex-1 flex flex-col efb-panel">
+            <div class="chat-container">
+                <!-- Chat Messages -->
+                <div id="chat-messages" class="chat-messages scrollbar-efb">
                     <div class="text-center text-[var(--efb-text-dim)] py-20">
-                        <p class="text-2xl mb-2">✈️</p>
-                        <p>Enter a query to search FCOM knowledge base</p>
-                        <p class="text-sm mt-2">Example: "What is the maximum altitude?"</p>
+                        <p class="text-4xl mb-4">✈️</p>
+                        <h2 class="text-xl font-bold mb-2">FCOM Knowledge Base</h2>
+                        <p class="text-sm">Ask me anything about flight operations, procedures, limitations, and systems.</p>
+                        <p class="text-xs mt-4 text-[var(--efb-text-dim)]">Powered by your uploaded manuals</p>
                     </div>
+                </div>
+                
+                <!-- Chat Input -->
+                <div class="chat-input-area">
+                    <div class="flex gap-3">
+                        <input type="text" id="chat-input" class="flex-1 efb-input px-4 py-3 rounded-lg" placeholder="Ask about FCOM procedures, limitations, systems..." />
+                        <button id="send-btn" class="efb-btn-primary px-6 py-3 rounded-lg">Send</button>
+                    </div>
+                    <p class="text-xs text-[var(--efb-text-dim)] mt-2">Press Enter to send. Type "show source" to see original text.</p>
                 </div>
             </div>
         </main>
     </div>
     
+    <!-- Admin Panel -->
     <div id="admin-panel" class="admin-panel fixed inset-0 bg-black/80 z-50 items-center justify-center">
         <div class="efb-panel w-full max-w-4xl max-h-[90vh] overflow-y-auto scrollbar-efb rounded-lg m-4">
             <div class="p-6 border-b border-[var(--efb-border)] flex justify-between items-center">
@@ -106,7 +146,7 @@
                     <h3 class="section-header">PDF Upload & Processing</h3>
                     <div class="grid grid-cols-2 gap-4 mb-4">
                         <div>
-                            <label class="block text-xs text-[var(--efb-text-dim)] mb-2">Aircraft Type</label>
+                            <label class="block text-xs text-[var(--efb-text-dim)] mb-2">Aircraft</label>
                             <select id="upload-aircraft" class="w-full efb-input px-3 py-2 rounded">
                                 <option value="B777">Boeing 777</option>
                                 <option value="A320">Airbus A320</option>
@@ -114,7 +154,7 @@
                             </select>
                         </div>
                         <div>
-                            <label class="block text-xs text-[var(--efb-text-dim)] mb-2">Manual Type</label>
+                            <label class="block text-xs text-[var(--efb-text-dim)] mb-2">Manual</label>
                             <select id="upload-manual" class="w-full efb-input px-3 py-2 rounded">
                                 <option value="FCOM">FCOM</option>
                                 <option value="FCTM">FCTM</option>
@@ -128,6 +168,7 @@
                     </div>
                     <button id="process-pdf-btn" class="efb-btn-primary px-6 py-3 rounded w-full">PROCESS PDF</button>
                 </div>
+                
                 <div id="processing-status" class="hidden mb-6">
                     <h3 class="section-header">Processing Status</h3>
                     <div class="bg-[#1a1a1a] p-4 rounded">
@@ -138,17 +179,18 @@
                         <div class="w-full bg-[var(--efb-border)] rounded h-2">
                             <div id="process-progress" class="bg-[var(--efb-accent)] h-2 rounded" style="width: 0%"></div>
                         </div>
-                        <p id="process-details" class="text-xs text-[var(--efb-text-dim)] mt-2"></p>
                     </div>
                 </div>
+                
                 <div class="mb-6">
                     <h3 class="section-header">Database Contents</h3>
                     <div id="db-contents" class="bg-[#1a1a1a] p-4 rounded max-h-60 overflow-y-auto scrollbar-efb">
                         <p class="text-[var(--efb-text-dim)]">Loading...</p>
                     </div>
                 </div>
+                
                 <div class="flex gap-4">
-                    <button id="refresh-db-btn" class="efb-btn px-4 py-2 rounded flex-1">Refresh Database</button>
+                    <button id="refresh-db-btn" class="efb-btn px-4 py-2 rounded flex-1">Refresh</button>
                     <button id="clear-db-btn" class="efb-btn px-4 py-2 rounded flex-1 text-[var(--efb-danger)]">Clear Database</button>
                 </div>
             </div>
@@ -159,13 +201,16 @@
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
         
         const ADMIN_USERNAME = 'kiraGez1';
-        const MAX_CHUNK_SIZE = 35000; // ~35KB safe limit
+        const MAX_CHUNK_SIZE = 35000;
         const INDEX_KEY = 'fcom_index';
         const CHUNK_PREFIX = 'fcom_';
         
         let isAdmin = false;
         let currentUser = null;
+        let conversationHistory = [];
+        let lastChunks = [];
         
+        // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
             try {
                 currentUser = await puter.auth.getUser();
@@ -182,10 +227,18 @@
         });
         
         function setupEventListeners() {
-            document.getElementById('search-btn').addEventListener('click', performSearch);
-            document.getElementById('query-input').addEventListener('keypress', e => { if (e.key === 'Enter') performSearch(); });
-            document.getElementById('admin-toggle-btn').addEventListener('click', () => { document.getElementById('admin-panel').classList.add('visible'); loadDbContents(); });
-            document.getElementById('close-admin').addEventListener('click', () => { document.getElementById('admin-panel').classList.remove('visible'); });
+            document.getElementById('send-btn').addEventListener('click', sendMessage);
+            document.getElementById('chat-input').addEventListener('keypress', e => { if (e.key === 'Enter') sendMessage(); });
+            document.getElementById('new-chat-btn').addEventListener('click', clearChat);
+            
+            document.getElementById('admin-toggle-btn').addEventListener('click', () => {
+                document.getElementById('admin-panel').classList.add('visible');
+                loadDbContents();
+            });
+            document.getElementById('close-admin').addEventListener('click', () => {
+                document.getElementById('admin-panel').classList.remove('visible');
+            });
+            
             document.getElementById('process-pdf-btn').addEventListener('click', processPdf);
             document.getElementById('refresh-db-btn').addEventListener('click', loadDbContents);
             document.getElementById('clear-db-btn').addEventListener('click', clearDatabase);
@@ -215,6 +268,193 @@
             } catch (e) { el.innerHTML = `<p class="text-[var(--efb-danger)]">Error: ${e.message}</p>`; }
         }
         
+        function clearChat() {
+            conversationHistory = [];
+            lastChunks = [];
+            const messagesEl = document.getElementById('chat-messages');
+            messagesEl.innerHTML = `
+                <div class="text-center text-[var(--efb-text-dim)] py-20">
+                    <p class="text-4xl mb-4">✈️</p>
+                    <h2 class="text-xl font-bold mb-2">FCOM Knowledge Base</h2>
+                    <p class="text-sm">Ask me anything about flight operations, procedures, limitations, and systems.</p>
+                    <p class="text-xs mt-4 text-[var(--efb-text-dim)]">Powered by your uploaded manuals</p>
+                </div>`;
+        }
+        
+        async function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const query = input.value.trim();
+            if (!query) return;
+            
+            input.value = '';
+            const messagesEl = document.getElementById('chat-messages');
+            
+            // Remove welcome message if present
+            if (messagesEl.querySelector('.text-center')) {
+                messagesEl.innerHTML = '';
+            }
+            
+            // Add user message
+            messagesEl.innerHTML += `<div class="message message-user">${escapeHtml(query)}</div>`;
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+            
+            // Add typing indicator
+            const typingId = 'typing-' + Date.now();
+            messagesEl.innerHTML += `<div id="${typingId}" class="message"><div class="typing-indicator"><span></span><span></span><span></span></div></div>`;
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+            
+            try {
+                // Check if user wants to see source
+                const showSource = query.toLowerCase().includes('show source') || query.toLowerCase().includes('original text');
+                
+                // Search for relevant chunks
+                const aircraft = document.getElementById('aircraft-select').value;
+                const manual = document.getElementById('manual-select').value;
+                const chunks = await searchDatabase(query, aircraft, manual);
+                
+                if (chunks.length === 0) {
+                    removeTyping(typingId);
+                    messagesEl.innerHTML += `<div class="message message-assistant"><p>No relevant information found in ${aircraft} ${manual}. Try uploading documents first or checking a different manual.</p></div>`;
+                } else {
+                    lastChunks = chunks;
+                    
+                    // Build conversation context
+                    conversationHistory.push({ role: 'user', content: query });
+                    
+                    // Query AI
+                    const response = await queryAI(query, chunks, conversationHistory);
+                    conversationHistory.push({ role: 'assistant', content: response });
+                    
+                    removeTyping(typingId);
+                    
+                    // Add response with citations
+                    let responseHtml = formatResponse(response, chunks);
+                    messagesEl.innerHTML += `<div class="message message-assistant">${responseHtml}</div>`;
+                }
+            } catch (e) {
+                console.error('Send error:', e);
+                removeTyping(typingId);
+                messagesEl.innerHTML += `<div class="message message-assistant"><p class="text-[var(--efb-danger)]">Error: ${e.message}</p></div>`;
+            }
+            
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+        }
+        
+        function removeTyping(id) {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        }
+        
+        async function searchDatabase(query, aircraft, manual) {
+            const indexData = await puter.kv.get(INDEX_KEY);
+            const index = indexData ? JSON.parse(indexData) : {};
+            
+            let docId = null;
+            for (const id in index) {
+                if (index[id].aircraft === aircraft && index[id].manual === manual) {
+                    docId = id;
+                    break;
+                }
+            }
+            if (!docId) return [];
+            
+            const chunkKeys = index[docId].chunks || [];
+            const queryWords = query.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+            
+            const scored = [];
+            for (const key of chunkKeys) {
+                const chunkData = await puter.kv.get(key);
+                if (!chunkData) continue;
+                const chunk = JSON.parse(chunkData);
+                const text = chunk.text.toLowerCase();
+                let score = 0;
+                queryWords.forEach(w => { score += (text.match(new RegExp(w, 'g')) || []).length; });
+                if (score > 0) scored.push({ ...chunk, score, chunkKey: key });
+            }
+            
+            return scored.sort((a, b) => b.score - a.score).slice(0, 5);
+        }
+        
+        async function queryAI(query, chunks, history) {
+            const contextInfo = chunks.map((c, i) => 
+                `[Pages ${c.startPage}-${c.endPage || c.startPage}]: ${c.text.slice(0, 2500)}`
+            ).join('\n\n---\n\n');
+            
+            const systemPrompt = `You are an expert FCOM (Flight Crew Operations Manual) assistant. You help pilots and crew members understand flight procedures, limitations, and systems.
+
+IMPORTANT RULES:
+1. Answer from the provided context only. If information is not in the context, say so.
+2. Be conversational but precise - this is aviation documentation.
+3. When citing information, mention page numbers naturally in your response (e.g., "According to pages 42-45...").
+4. Use formatting like bullet points and bold text to make answers clear.
+5. If the user asks for "source" or "original text", provide the exact text from the context.
+6. For procedures, number the steps clearly.
+7. For limitations, state exact values.
+
+Context from the manual:
+${contextInfo}`;
+
+            const messages = [
+                { role: 'system', content: systemPrompt },
+                ...history.slice(-6) // Keep last 3 exchanges for context
+            ];
+            
+            const response = await puter.ai.chat(messages, { model: 'claude-3-5-sonnet' });
+            return response.message?.content || response.toString();
+        }
+        
+        function formatResponse(text, chunks) {
+            // Format markdown-like syntax
+            let html = text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/```([\s\S]*?)```/g, '<code>$1</code>')
+                .replace(/^[-•]\s+(.+)/gm, '<li>$1</li>')
+                .replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>')
+                .replace(/^\d+\.\s+(.+)/gm, '<li>$1</li>')
+                .replace(/\n\n/g, '</p><p>')
+                .replace(/^/, '<p>')
+                .replace(/$/, '</p>');
+            
+            // Add citation chips
+            const pageRanges = [...new Set(chunks.map(c => `${c.startPage}-${c.endPage || c.startPage}`))];
+            const citations = pageRanges.map(p => 
+                `<span class="citation-chip" onclick="showSource('${p}')">📄 Page ${p}</span>`
+            ).join('');
+            
+            return html + `<div class="mt-3">${citations}</div>`;
+        }
+        
+        async function showSource(pageRange) {
+            const [start, end] = pageRange.split('-').map(Number);
+            const chunk = lastChunks.find(c => c.startPage === start);
+            
+            if (chunk) {
+                const sourcePanel = document.createElement('div');
+                sourcePanel.className = 'source-panel visible';
+                sourcePanel.innerHTML = `
+                    <div class="flex justify-between items-center mb-2">
+                        <strong class="text-[var(--efb-accent)]">Original Text (Pages ${pageRange})</strong>
+                        <button onclick="this.parentElement.parentElement.remove()" class="text-[var(--efb-text-dim)] hover:text-[var(--efb-text)]">✕</button>
+                    </div>
+                    <div class="source-text">${escapeHtml(chunk.text)}</div>
+                `;
+                
+                const lastMessage = document.querySelector('.message-assistant:last-child');
+                if (lastMessage) {
+                    const existing = lastMessage.querySelector('.source-panel');
+                    if (existing) existing.remove();
+                    lastMessage.appendChild(sourcePanel);
+                }
+            }
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
         async function processPdf() {
             const fileInput = document.getElementById('pdf-file-input');
             const aircraft = document.getElementById('upload-aircraft').value;
@@ -231,7 +471,6 @@
                 const totalPages = pdf.numPages;
                 updateProcessStatus('loading', `PDF loaded: ${totalPages} pages`, 5);
                 
-                // Extract all pages
                 const pages = [];
                 for (let i = 1; i <= totalPages; i++) {
                     const page = await pdf.getPage(i);
@@ -241,7 +480,6 @@
                     updateProcessStatus('loading', `Extracting page ${i}/${totalPages}`, 5 + (i / totalPages) * 50);
                 }
                 
-                // Chunk pages into safe-size chunks
                 updateProcessStatus('loading', 'Chunking text...', 60);
                 const chunks = [];
                 let current = { pages: [], text: '', startPage: 1 };
@@ -259,15 +497,12 @@
                 
                 updateProcessStatus('loading', `Saving ${chunks.length} chunks...`, 70);
                 
-                // Load existing index
                 let indexData = await puter.kv.get(INDEX_KEY);
                 let index = indexData ? JSON.parse(indexData) : {};
                 
-                // Generate unique ID for this document
                 const docId = `${aircraft}_${manual}_${Date.now()}`;
                 const chunkKeys = [];
                 
-                // Save each chunk separately
                 for (let i = 0; i < chunks.length; i++) {
                     const chunkKey = `${CHUNK_PREFIX}${docId}_${i}`;
                     await puter.kv.set(chunkKey, JSON.stringify(chunks[i]));
@@ -275,7 +510,6 @@
                     updateProcessStatus('loading', `Saving chunk ${i + 1}/${chunks.length}`, 70 + (i / chunks.length) * 25);
                 }
                 
-                // Update index
                 index[docId] = { aircraft, manual, chunks: chunkKeys, totalPages, createdAt: Date.now() };
                 await puter.kv.set(INDEX_KEY, JSON.stringify(index));
                 
@@ -313,100 +547,6 @@
                 await loadDbContents();
                 alert('Database cleared');
             } catch (e) { alert('Error: ' + e.message); }
-        }
-        
-        async function performSearch() {
-            const query = document.getElementById('query-input').value.trim();
-            const aircraft = document.getElementById('aircraft-select').value;
-            const manual = document.getElementById('manual-select').value;
-            if (!query) return;
-            
-            const resultsPanel = document.getElementById('results-panel');
-            resultsPanel.innerHTML = '<div class="flex items-center gap-2"><div class="w-4 h-4 border-2 border-[var(--efb-accent)] border-t-transparent rounded-full animate-spin"></div><span>Searching...</span></div>';
-            
-            try {
-                const chunks = await searchDatabase(query, aircraft, manual);
-                if (chunks.length === 0) {
-                    resultsPanel.innerHTML = '<div class="text-center text-[var(--efb-text-dim)] py-10"><p>No relevant sections found</p><p class="text-sm mt-2">Try different keywords</p></div>';
-                    return;
-                }
-                const answer = await queryAI(query, chunks);
-                displayResults(answer, chunks);
-            } catch (e) {
-                console.error('Search error:', e);
-                resultsPanel.innerHTML = `<div class="text-center text-[var(--efb-danger)] py-10"><p>Error: ${e.message}</p></div>`;
-            }
-        }
-        
-        async function searchDatabase(query, aircraft, manual) {
-            const indexData = await puter.kv.get(INDEX_KEY);
-            const index = indexData ? JSON.parse(indexData) : {};
-            
-            // Find matching document
-            let docId = null;
-            for (const id in index) {
-                if (index[id].aircraft === aircraft && index[id].manual === manual) {
-                    docId = id;
-                    break;
-                }
-            }
-            if (!docId) return [];
-            
-            const chunkKeys = index[docId].chunks || [];
-            const queryWords = query.toLowerCase().split(/\s+/).filter(w => w.length > 2);
-            
-            // Load and score chunks
-            const scored = [];
-            for (const key of chunkKeys) {
-                const chunkData = await puter.kv.get(key);
-                if (!chunkData) continue;
-                const chunk = JSON.parse(chunkData);
-                const text = chunk.text.toLowerCase();
-                let score = 0;
-                queryWords.forEach(w => { score += (text.match(new RegExp(w, 'g')) || []).length; });
-                if (score > 0) scored.push({ ...chunk, score, chunkKey: key });
-            }
-            
-            return scored.sort((a, b) => b.score - a.score).slice(0, 5);
-        }
-        
-        async function queryAI(query, chunks) {
-            const context = chunks.map((c, i) => `[Page ${c.startPage}-${c.endPage || c.startPage}]\n${c.text.slice(0, 2000)}`).join('\n\n---\n\n');
-            const systemPrompt = `You are an FCOM expert. Answer ONLY from provided context. Cite page numbers. Be precise.\n\nContext:\n${context}`;
-            
-            try {
-                const response = await puter.ai.chat(query, { model: 'claude-3-5-sonnet', system: systemPrompt });
-                return response.message?.content || response.toString();
-            } catch (e) {
-                // Fallback if AI fails
-                return `AI query failed: ${e.message}\n\nRelevant pages: ${chunks.map(c => c.startPage).join(', ')}`;
-            }
-        }
-        
-        function displayResults(answer, chunks) {
-            const resultsPanel = document.getElementById('results-panel');
-            resultsPanel.innerHTML = `
-                <div class="prose prose-invert max-w-none">
-                    <div class="mb-6 p-4 bg-[#1a1a1a] rounded-lg border border-[var(--efb-border)]">
-                        ${formatAnswer(answer)}
-                    </div>
-                    <h3 class="section-header">Source Sections</h3>
-                    <div class="space-y-3">
-                        ${chunks.map(c => `
-                            <div class="p-3 bg-[#1a1a1a] rounded border border-[var(--efb-border)]">
-                                <span class="text-[var(--efb-accent)] font-bold">Pages ${c.startPage}-${c.endPage || c.startPage}</span>
-                                <p class="text-sm text-[var(--efb-text-dim)] mt-1">${c.text.slice(0, 300)}...</p>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>`;
-        }
-        
-        function formatAnswer(text) {
-            return text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                       .replace(/\n\n/g, '</p><p class="mt-3">')
-                       .replace(/^/, '<p>')
-                       .replace(/$/, '</p>');
         }
         
         function updateStatus(type, text) {
