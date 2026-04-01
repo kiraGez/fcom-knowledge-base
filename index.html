@@ -261,7 +261,7 @@
                 messagesEl.innerHTML = '';
             }
             
-            messagesEl.innerHTML += `<div class="message message-user">Debug: Show all chunks for ${aircraft} ${manual}</div>`;
+            messagesEl.innerHTML += `<div class="message message-user">Debug: Search for 'turbulent' in ${aircraft} ${manual}</div>`;
             
             const indexData = await puter.kv.get(INDEX_KEY);
             const index = indexData ? JSON.parse(indexData) : {};
@@ -280,16 +280,32 @@
             }
             
             const chunkKeys = index[docId].chunks || [];
-            messagesEl.innerHTML += `<div class="message message-assistant"><p>Found ${chunkKeys.length} chunks. First 3:</p></div>`;
+            messagesEl.innerHTML += `<div class="message message-assistant"><p>Searching ${chunkKeys.length} chunks for 'turbulent' or 'penetration'...</p></div>`;
             
-            for (let i = 0; i < Math.min(3, chunkKeys.length); i++) {
+            let found = [];
+            for (let i = 0; i < chunkKeys.length; i++) {
                 const chunkData = await puter.kv.get(chunkKeys[i]);
                 if (chunkData) {
                     const chunk = JSON.parse(chunkData);
+                    const text = chunk.text.toLowerCase();
+                    if (text.includes('turbulent') || text.includes('penetration')) {
+                        found.push({
+                            page: chunk.startPage,
+                            text: chunk.text.slice(0, 500)
+                        });
+                    }
+                }
+            }
+            
+            if (found.length === 0) {
+                messagesEl.innerHTML += `<div class="message message-assistant"><p class="text-[var(--efb-danger)]">No chunks contain 'turbulent' or 'penetration'. The PDF text extraction may have failed.</p></div>`;
+            } else {
+                messagesEl.innerHTML += `<div class="message message-assistant"><p class="text-[var(--efb-success)]">Found ${found.length} chunks with turbulence content:</p></div>`;
+                for (const f of found.slice(0, 5)) {
                     messagesEl.innerHTML += `
                         <div class="message message-assistant">
-                            <strong class="text-[var(--efb-accent)]">Chunk ${i+1} (Pages ${chunk.startPage}-${chunk.endPage || chunk.startPage})</strong>
-                            <div class="text-xs text-[var(--efb-text-dim)] mt-1 font-mono whitespace-pre-wrap max-h-40 overflow-y-auto">${escapeHtml(chunk.text.slice(0, 500))}...</div>
+                            <strong class="text-[var(--efb-accent)]">Page ${f.page}</strong>
+                            <div class="text-xs text-[var(--efb-text-dim)] mt-1 font-mono">${escapeHtml(f.text)}</div>
                         </div>`;
                 }
             }
