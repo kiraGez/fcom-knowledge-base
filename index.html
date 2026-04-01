@@ -755,7 +755,12 @@ Remember: If the answer is not in the text above, say so. Do not make things up.
                     return;
                 }
                 
-                updateProcessStatus('loading', `Extracted ${totalText} chars. Chunking...`, 60);
+                // Verify first and last pages
+                const firstPage = pages[0]?.page || 0;
+                const lastPage = pages[pages.length - 1]?.page || 0;
+                console.log(`PDF extracted: pages ${firstPage}-${lastPage}, ${pages.length} pages, ${totalText} total chars`);
+                
+                updateProcessStatus('loading', `Extracted pages ${firstPage}-${lastPage}. Chunking...`, 60);
                 
                 updateProcessStatus('loading', 'Chunking text...', 60);
                 const chunks = [];
