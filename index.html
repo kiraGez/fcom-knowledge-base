@@ -291,21 +291,23 @@
                     if (text.includes('turbulent') || text.includes('penetration')) {
                         found.push({
                             page: chunk.startPage,
-                            text: chunk.text.slice(0, 500)
+                            endPage: chunk.endPage,
+                            text: chunk.text.slice(0, 600)
                         });
                     }
                 }
             }
             
             if (found.length === 0) {
-                messagesEl.innerHTML += `<div class="message message-assistant"><p class="text-[var(--efb-danger)]">No chunks contain 'turbulent' or 'penetration'. The PDF text extraction may have failed.</p></div>`;
+                messagesEl.innerHTML += `<div class="message message-assistant"><p class="text-[var(--efb-danger)]">❌ No chunks contain 'turbulent' or 'penetration'!</p>
+                    <p class="text-sm mt-2">The PDF text extraction failed. Clear database and re-upload.</p></div>`;
             } else {
-                messagesEl.innerHTML += `<div class="message message-assistant"><p class="text-[var(--efb-success)]">Found ${found.length} chunks with turbulence content:</p></div>`;
-                for (const f of found.slice(0, 5)) {
+                messagesEl.innerHTML += `<div class="message message-assistant"><p class="text-[var(--efb-success)]">✅ Found ${found.length} chunks with turbulence content:</p></div>`;
+                for (const f of found) {
                     messagesEl.innerHTML += `
                         <div class="message message-assistant">
-                            <strong class="text-[var(--efb-accent)]">Page ${f.page}</strong>
-                            <div class="text-xs text-[var(--efb-text-dim)] mt-1 font-mono">${escapeHtml(f.text)}</div>
+                            <strong class="text-[var(--efb-accent)]">📄 Pages ${f.page}-${f.endPage || f.page}</strong>
+                            <div class="text-xs text-[var(--efb-text-dim)] mt-1 font-mono whitespace-pre-wrap">${escapeHtml(f.text)}</div>
                         </div>`;
                 }
             }
