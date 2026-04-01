@@ -98,7 +98,8 @@
             
             <div class="p-4 border-b border-[var(--efb-border)]">
                 <button id="new-chat-btn" class="w-full efb-btn px-3 py-2 rounded text-sm mb-2">+ New Chat</button>
-                <button id="debug-btn" class="w-full efb-btn px-3 py-2 rounded text-sm text-xs">Debug: Show All Chunks</button>
+                <button id="debug-btn" class="w-full efb-btn px-3 py-2 rounded text-sm text-xs mb-2">Debug: Show Chunks</button>
+                <button id="reprocess-btn" class="w-full efb-btn px-3 py-2 rounded text-xs text-[var(--efb-warning)]">⚠️ Re-process PDF</button>
             </div>
             
             <div class="mt-auto p-4">
@@ -232,6 +233,11 @@
             document.getElementById('chat-input').addEventListener('keypress', e => { if (e.key === 'Enter') sendMessage(); });
             document.getElementById('new-chat-btn').addEventListener('click', clearChat);
             document.getElementById('debug-btn').addEventListener('click', debugShowAllChunks);
+            document.getElementById('reprocess-btn').addEventListener('click', () => {
+                document.getElementById('admin-panel').classList.add('visible');
+                loadDbContents();
+                alert('Please clear the database and re-upload the PDF with the improved text extraction.');
+            });
             
             document.getElementById('admin-toggle-btn').addEventListener('click', () => {
                 document.getElementById('admin-panel').classList.add('visible');
@@ -638,8 +644,30 @@ Remember: If the answer is not in the text above, say so. Do not make things up.
                 for (let i = 1; i <= totalPages; i++) {
                     const page = await pdf.getPage(i);
                     const textContent = await page.getTextContent();
-                    const text = textContent.items.map(item => item.str).join(' ');
-                    pages.push({ page: i, text });
+                    
+                    // Better text extraction - handle items with proper spacing
+                    let pageText = '';
+                    let lastY = null;
+                    
+                    for (const item of textContent.items) {
+                        if (item.str === ' ') continue;
+                        
+                        // Check if we're on a new line (different Y position)
+                        if (lastY !== null && Math.abs(item.transform[5] - lastY) > 5) {
+                            pageText += '\n';
+                        } else if (pageText.length > 0 && !pageText.endsWith(' ') && !pageText.endsWith('\n')) {
+                            pageText += ' ';
+                        }
+                        
+                        pageText += item.str;
+                        lastY = item.transform[5];
+                    }
+                    
+                    // Only add if we got meaningful text
+                    if (pageText.trim().length > 10) {
+                        pages.push({ page: i, text: pageText.trim() });
+                    }
+                    
                     updateProcessStatus('loading', `Extracting page ${i}/${totalPages}`, 5 + (i / totalPages) * 50);
                 }
                 
