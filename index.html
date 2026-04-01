@@ -8,7 +8,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://js.puter.com/v2/"></script>
     <style>
-        /* EFB High-Contrast Dark Theme */
         :root {
             --efb-bg: #0a0a0a;
             --efb-panel: #141414;
@@ -21,121 +20,30 @@
             --efb-danger: #ff4444;
             --efb-success: #00ff88;
         }
-        
-        body {
-            background: var(--efb-bg);
-            color: var(--efb-text);
-            font-family: 'Roboto Mono', 'Consolas', monospace;
-        }
-        
-        .efb-panel {
-            background: var(--efb-panel);
-            border: 1px solid var(--efb-border);
-        }
-        
-        .efb-glow {
-            box-shadow: 0 0 20px rgba(0, 191, 255, 0.3);
-        }
-        
-        .efb-input {
-            background: #1a1a1a;
-            border: 1px solid var(--efb-border);
-            color: var(--efb-text);
-        }
-        
-        .efb-input:focus {
-            border-color: var(--efb-accent);
-            outline: none;
-            box-shadow: 0 0 10px rgba(0, 191, 255, 0.2);
-        }
-        
-        .efb-btn {
-            background: linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%);
-            border: 1px solid var(--efb-border);
-            color: var(--efb-text);
-            transition: all 0.2s;
-        }
-        
-        .efb-btn:hover {
-            border-color: var(--efb-accent);
-            box-shadow: 0 0 10px rgba(0, 191, 255, 0.3);
-        }
-        
-        .efb-btn-primary {
-            background: linear-gradient(180deg, var(--efb-accent) 0%, var(--efb-accent-dim) 100%);
-            border-color: var(--efb-accent);
-            color: #000;
-        }
-        
-        .efb-btn-primary:hover {
-            box-shadow: 0 0 20px rgba(0, 191, 255, 0.5);
-        }
-        
-        .scrollbar-efb::-webkit-scrollbar {
-            width: 8px;
-        }
-        
-        .scrollbar-efb::-webkit-scrollbar-track {
-            background: var(--efb-bg);
-        }
-        
-        .scrollbar-efb::-webkit-scrollbar-thumb {
-            background: var(--efb-border);
-            border-radius: 4px;
-        }
-        
-        .scrollbar-efb::-webkit-scrollbar-thumb:hover {
-            background: var(--efb-accent-dim);
-        }
-        
-        .section-header {
-            color: var(--efb-accent);
-            font-weight: bold;
-            border-bottom: 1px solid var(--efb-border);
-            padding-bottom: 0.5rem;
-            margin-bottom: 0.5rem;
-        }
-        
-        .citation-link {
-            color: var(--efb-accent);
-            text-decoration: underline;
-            cursor: pointer;
-        }
-        
-        .citation-link:hover {
-            color: #66ddff;
-        }
-        
-        @keyframes pulse-glow {
-            0%, 100% { opacity: 0.5; }
-            50% { opacity: 1; }
-        }
-        
-        .status-indicator {
-            animation: pulse-glow 2s infinite;
-        }
-        
-        .admin-panel {
-            display: none;
-        }
-        
-        .admin-panel.visible {
-            display: block;
-        }
+        body { background: var(--efb-bg); color: var(--efb-text); font-family: 'Roboto Mono', 'Consolas', monospace; }
+        .efb-panel { background: var(--efb-panel); border: 1px solid var(--efb-border); }
+        .efb-input { background: #1a1a1a; border: 1px solid var(--efb-border); color: var(--efb-text); }
+        .efb-input:focus { border-color: var(--efb-accent); outline: none; box-shadow: 0 0 10px rgba(0, 191, 255, 0.2); }
+        .efb-btn { background: linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%); border: 1px solid var(--efb-border); color: var(--efb-text); transition: all 0.2s; }
+        .efb-btn:hover { border-color: var(--efb-accent); }
+        .efb-btn-primary { background: linear-gradient(180deg, var(--efb-accent) 0%, var(--efb-accent-dim) 100%); border-color: var(--efb-accent); color: #000; font-weight: bold; }
+        .scrollbar-efb::-webkit-scrollbar { width: 8px; }
+        .scrollbar-efb::-webkit-scrollbar-track { background: var(--efb-bg); }
+        .scrollbar-efb::-webkit-scrollbar-thumb { background: var(--efb-border); border-radius: 4px; }
+        .section-header { color: var(--efb-accent); font-weight: bold; border-bottom: 1px solid var(--efb-border); padding-bottom: 0.5rem; margin-bottom: 0.5rem; }
+        @keyframes pulse-glow { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+        .status-indicator { animation: pulse-glow 2s infinite; }
+        .admin-panel { display: none; }
+        .admin-panel.visible { display: flex; }
     </style>
 </head>
 <body class="min-h-screen">
-    <!-- Main EFB Interface -->
     <div class="flex h-screen">
-        <!-- Sidebar -->
         <aside class="w-64 efb-panel flex flex-col">
-            <!-- Logo/Title -->
             <div class="p-4 border-b border-[var(--efb-border)]">
                 <h1 class="text-xl font-bold text-[var(--efb-accent)]">FCOM BASE</h1>
                 <p class="text-xs text-[var(--efb-text-dim)]">Electronic Flight Bag</p>
             </div>
-            
-            <!-- Aircraft Selection -->
             <div class="p-4 border-b border-[var(--efb-border)]">
                 <label class="block text-xs text-[var(--efb-text-dim)] mb-2">AIRCRAFT TYPE</label>
                 <select id="aircraft-select" class="w-full efb-input px-3 py-2 rounded">
@@ -144,8 +52,6 @@
                     <option value="B737">Boeing 737</option>
                 </select>
             </div>
-            
-            <!-- Manual Selection -->
             <div class="p-4 border-b border-[var(--efb-border)]">
                 <label class="block text-xs text-[var(--efb-text-dim)] mb-2">MANUAL</label>
                 <select id="manual-select" class="w-full efb-input px-3 py-2 rounded">
@@ -154,72 +60,48 @@
                     <option value="QRH">Quick Reference Handbook</option>
                 </select>
             </div>
-            
-            <!-- Status -->
             <div class="p-4 border-b border-[var(--efb-border)]">
                 <div class="flex items-center gap-2">
                     <div id="status-indicator" class="w-3 h-3 rounded-full bg-[var(--efb-warning)] status-indicator"></div>
                     <span id="status-text" class="text-xs text-[var(--efb-text-dim)]">Loading...</span>
                 </div>
-                <div id="db-stats" class="mt-2 text-xs text-[var(--efb-text-dim)]">
-                    Sections: <span id="section-count">0</span>
-                </div>
+                <div class="mt-2 text-xs text-[var(--efb-text-dim)]">Chunks: <span id="chunk-count">0</span></div>
             </div>
-            
-            <!-- Admin Toggle (hidden) -->
             <div class="mt-auto p-4">
-                <button id="admin-toggle-btn" class="hidden w-full efb-btn px-3 py-2 rounded text-sm">
-                    Admin Panel
-                </button>
+                <button id="admin-toggle-btn" class="hidden w-full efb-btn px-3 py-2 rounded text-sm">Admin Panel</button>
             </div>
-            
-            <!-- User Info -->
             <div class="p-4 border-t border-[var(--efb-border)]">
                 <p class="text-xs text-[var(--efb-text-dim)]">Logged in as:</p>
                 <p id="user-name" class="text-sm truncate">...</p>
             </div>
         </aside>
         
-        <!-- Main Content -->
         <main class="flex-1 flex flex-col">
-            <!-- Query Panel -->
             <div class="p-6 efb-panel m-4 rounded-lg">
                 <div class="flex gap-4">
-                    <input 
-                        type="text" 
-                        id="query-input" 
-                        class="flex-1 efb-input px-4 py-3 rounded-lg text-lg"
-                        placeholder="Ask about FCOM procedures, limitations, systems..."
-                    />
-                    <button id="search-btn" class="efb-btn-primary px-6 py-3 rounded-lg font-bold">
-                        SEARCH
-                    </button>
+                    <input type="text" id="query-input" class="flex-1 efb-input px-4 py-3 rounded-lg text-lg" placeholder="Ask about FCOM procedures, limitations, systems..." />
+                    <button id="search-btn" class="efb-btn-primary px-6 py-3 rounded-lg">SEARCH</button>
                 </div>
             </div>
-            
-            <!-- Results Panel -->
             <div class="flex-1 p-4 overflow-hidden">
                 <div id="results-panel" class="h-full efb-panel rounded-lg p-6 overflow-y-auto scrollbar-efb">
                     <div class="text-center text-[var(--efb-text-dim)] py-20">
                         <p class="text-2xl mb-2">✈️</p>
                         <p>Enter a query to search FCOM knowledge base</p>
-                        <p class="text-sm mt-2">Example: "What is the maximum altitude for B777?"</p>
+                        <p class="text-sm mt-2">Example: "What is the maximum altitude?"</p>
                     </div>
                 </div>
             </div>
         </main>
     </div>
     
-    <!-- Admin Panel (Hidden by default) -->
-    <div id="admin-panel" class="admin-panel fixed inset-0 bg-black/80 z-50 flex items-center justify-center">
+    <div id="admin-panel" class="admin-panel fixed inset-0 bg-black/80 z-50 items-center justify-center">
         <div class="efb-panel w-full max-w-4xl max-h-[90vh] overflow-y-auto scrollbar-efb rounded-lg m-4">
             <div class="p-6 border-b border-[var(--efb-border)] flex justify-between items-center">
                 <h2 class="text-xl font-bold text-[var(--efb-accent)]">Admin Dashboard</h2>
                 <button id="close-admin" class="efb-btn px-4 py-2 rounded">Close</button>
             </div>
-            
             <div class="p-6">
-                <!-- Upload Section -->
                 <div class="mb-6">
                     <h3 class="section-header">PDF Upload & Processing</h3>
                     <div class="grid grid-cols-2 gap-4 mb-4">
@@ -240,18 +122,12 @@
                             </select>
                         </div>
                     </div>
-                    
                     <div class="mb-4">
                         <label class="block text-xs text-[var(--efb-text-dim)] mb-2">PDF File</label>
                         <input type="file" id="pdf-file-input" accept=".pdf" class="w-full efb-input px-3 py-2 rounded" />
                     </div>
-                    
-                    <button id="process-pdf-btn" class="efb-btn-primary px-6 py-3 rounded font-bold w-full">
-                        PROCESS PDF
-                    </button>
+                    <button id="process-pdf-btn" class="efb-btn-primary px-6 py-3 rounded w-full">PROCESS PDF</button>
                 </div>
-                
-                <!-- Processing Status -->
                 <div id="processing-status" class="hidden mb-6">
                     <h3 class="section-header">Processing Status</h3>
                     <div class="bg-[#1a1a1a] p-4 rounded">
@@ -265,16 +141,12 @@
                         <p id="process-details" class="text-xs text-[var(--efb-text-dim)] mt-2"></p>
                     </div>
                 </div>
-                
-                <!-- Database Contents -->
                 <div class="mb-6">
                     <h3 class="section-header">Database Contents</h3>
                     <div id="db-contents" class="bg-[#1a1a1a] p-4 rounded max-h-60 overflow-y-auto scrollbar-efb">
                         <p class="text-[var(--efb-text-dim)]">Loading...</p>
                     </div>
                 </div>
-                
-                <!-- Actions -->
                 <div class="flex gap-4">
                     <button id="refresh-db-btn" class="efb-btn px-4 py-2 rounded flex-1">Refresh Database</button>
                     <button id="clear-db-btn" class="efb-btn px-4 py-2 rounded flex-1 text-[var(--efb-danger)]">Clear Database</button>
@@ -284,219 +156,135 @@
     </div>
 
     <script>
-        // PDF.js worker
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
         
-        // Admin username check
         const ADMIN_USERNAME = 'kiraGez1';
+        const MAX_CHUNK_SIZE = 35000; // ~35KB safe limit
+        const INDEX_KEY = 'fcom_index';
+        const CHUNK_PREFIX = 'fcom_';
         
-        // State
         let isAdmin = false;
         let currentUser = null;
-        let dbKey = 'fcom_knowledge_base';
         
-        // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
-            await initApp();
-        });
-        
-        async function initApp() {
             try {
-                // Get user info
                 currentUser = await puter.auth.getUser();
                 document.getElementById('user-name').textContent = currentUser?.username || 'Guest';
-                
-                // Check if admin
                 isAdmin = currentUser?.username === ADMIN_USERNAME;
-                
-                if (isAdmin) {
-                    document.getElementById('admin-toggle-btn').classList.remove('hidden');
-                }
-                
-                // Load database stats
+                if (isAdmin) document.getElementById('admin-toggle-btn').classList.remove('hidden');
                 await loadDbStats();
-                
-                // Update status
                 updateStatus('ready', 'Ready');
-                
-            } catch (error) {
-                console.error('Init error:', error);
-                updateStatus('error', 'Not authenticated');
+            } catch (e) {
+                console.error('Init error:', e);
+                updateStatus('ready', 'Ready (Guest)');
             }
-            
-            // Event listeners
             setupEventListeners();
-        }
+        });
         
         function setupEventListeners() {
-            // Search
             document.getElementById('search-btn').addEventListener('click', performSearch);
-            document.getElementById('query-input').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') performSearch();
-            });
-            
-            // Admin panel
-            document.getElementById('admin-toggle-btn').addEventListener('click', () => {
-                document.getElementById('admin-panel').classList.add('visible');
-                loadDbContents();
-            });
-            document.getElementById('close-admin').addEventListener('click', () => {
-                document.getElementById('admin-panel').classList.remove('visible');
-            });
-            
-            // PDF Processing
+            document.getElementById('query-input').addEventListener('keypress', e => { if (e.key === 'Enter') performSearch(); });
+            document.getElementById('admin-toggle-btn').addEventListener('click', () => { document.getElementById('admin-panel').classList.add('visible'); loadDbContents(); });
+            document.getElementById('close-admin').addEventListener('click', () => { document.getElementById('admin-panel').classList.remove('visible'); });
             document.getElementById('process-pdf-btn').addEventListener('click', processPdf);
-            
-            // Database actions
             document.getElementById('refresh-db-btn').addEventListener('click', loadDbContents);
             document.getElementById('clear-db-btn').addEventListener('click', clearDatabase);
         }
         
         async function loadDbStats() {
             try {
-                const data = await puter.kv.get(dbKey);
-                const docs = data ? JSON.parse(data) : {};
-                let totalSections = 0;
-                Object.values(docs).forEach(aircraft => {
-                    Object.values(aircraft).forEach(manual => {
-                        totalSections += manual.length || 0;
-                    });
-                });
-                document.getElementById('section-count').textContent = totalSections;
-            } catch (error) {
-                console.error('Stats error:', error);
-            }
+                const indexData = await puter.kv.get(INDEX_KEY);
+                const index = indexData ? JSON.parse(indexData) : {};
+                let total = 0;
+                for (const k in index) total += index[k].chunks?.length || 0;
+                document.getElementById('chunk-count').textContent = total;
+            } catch (e) { console.error('Stats error:', e); }
         }
         
         async function loadDbContents() {
-            const contentsEl = document.getElementById('db-contents');
+            const el = document.getElementById('db-contents');
             try {
-                const data = await puter.kv.get(dbKey);
-                const docs = data ? JSON.parse(data) : {};
-                
+                const indexData = await puter.kv.get(INDEX_KEY);
+                const index = indexData ? JSON.parse(indexData) : {};
                 let html = '';
-                for (const [aircraft, manuals] of Object.entries(docs)) {
-                    html += `<div class="mb-3"><strong class="text-[var(--efb-accent)]">${aircraft}</strong>`;
-                    for (const [manual, sections] of Object.entries(manuals)) {
-                        html += `<div class="ml-4 text-sm">${manual}: ${sections.length} sections</div>`;
-                    }
-                    html += '</div>';
+                for (const [k, m] of Object.entries(index)) {
+                    html += `<div class="mb-2"><strong class="text-[var(--efb-accent)]">${m.aircraft} - ${m.manual}</strong>
+                        <div class="text-sm text-[var(--efb-text-dim)]">${m.chunks?.length || 0} chunks, ${m.totalPages || '?'} pages</div></div>`;
                 }
-                
-                contentsEl.innerHTML = html || '<p class="text-[var(--efb-text-dim)]">No documents indexed</p>';
-            } catch (error) {
-                contentsEl.innerHTML = `<p class="text-[var(--efb-danger)]">Error: ${error.message}</p>`;
-            }
+                el.innerHTML = html || '<p class="text-[var(--efb-text-dim)]">No documents indexed</p>';
+            } catch (e) { el.innerHTML = `<p class="text-[var(--efb-danger)]">Error: ${e.message}</p>`; }
         }
         
         async function processPdf() {
             const fileInput = document.getElementById('pdf-file-input');
             const aircraft = document.getElementById('upload-aircraft').value;
             const manual = document.getElementById('upload-manual').value;
-            
-            if (!fileInput.files[0]) {
-                alert('Please select a PDF file');
-                return;
-            }
+            if (!fileInput.files[0]) { alert('Please select a PDF file'); return; }
             
             const file = fileInput.files[0];
-            
-            // Show processing status
             document.getElementById('processing-status').classList.remove('hidden');
             updateProcessStatus('loading', 'Loading PDF...', 0);
             
             try {
-                // Read file
                 const arrayBuffer = await file.arrayBuffer();
                 const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-                
                 const totalPages = pdf.numPages;
                 updateProcessStatus('loading', `PDF loaded: ${totalPages} pages`, 5);
                 
-                // Extract text and detect sections
-                const sections = [];
-                let currentSection = null;
-                let currentPage = 1;
-                
+                // Extract all pages
+                const pages = [];
                 for (let i = 1; i <= totalPages; i++) {
                     const page = await pdf.getPage(i);
                     const textContent = await page.getTextContent();
-                    const pageText = textContent.items.map(item => item.str).join(' ');
-                    
-                    // Detect section headers (common FCOM patterns)
-                    const sectionPatterns = [
-                        /^(\d+\.\s+[A-Z][A-Za-z\s]+)/,  // "1. Title"
-                        /^([A-Z]{2,}[\s\-–][A-Z][A-Za-z\s]+)/,  // "LIMITATIONS - General"
-                        /^(CHAPTER|SECTION|APPENDIX)\s+\d+/i,  // Chapter/Section headers
-                        /^([A-Z][A-Z\s]{5,})$/,  // ALL CAPS headers
-                    ];
-                    
-                    // Check for section break
-                    let isSectionStart = false;
-                    let sectionTitle = '';
-                    
-                    for (const pattern of sectionPatterns) {
-                        const match = pageText.match(pattern);
-                        if (match && pageText.trim().length < 200) {
-                            isSectionStart = true;
-                            sectionTitle = match[1].trim();
-                            break;
-                        }
-                    }
-                    
-                    if (isSectionStart && currentSection) {
-                        // Save previous section
-                        sections.push(currentSection);
-                        currentSection = null;
-                    }
-                    
-                    if (!currentSection) {
-                        currentSection = {
-                            title: sectionTitle || `Section starting page ${i}`,
-                            startPage: i,
-                            text: '',
-                            aircraft: aircraft,
-                            manual: manual
-                        };
-                    }
-                    
-                    currentSection.text += pageText + '\n';
-                    
-                    // Progress update
-                    const progress = 5 + (i / totalPages) * 85;
-                    updateProcessStatus('loading', `Processing page ${i}/${totalPages}`, progress);
+                    const text = textContent.items.map(item => item.str).join(' ');
+                    pages.push({ page: i, text });
+                    updateProcessStatus('loading', `Extracting page ${i}/${totalPages}`, 5 + (i / totalPages) * 50));
                 }
                 
-                // Save last section
-                if (currentSection) {
-                    sections.push(currentSection);
+                // Chunk pages into safe-size chunks
+                updateProcessStatus('loading', 'Chunking text...', 60);
+                const chunks = [];
+                let current = { pages: [], text: '', startPage: 1 };
+                
+                for (const p of pages) {
+                    if (current.text.length + p.text.length > MAX_CHUNK_SIZE && current.text.length > 0) {
+                        chunks.push({ ...current, endPage: current.pages[current.pages.length - 1] });
+                        current = { pages: [p.page], text: p.text, startPage: p.page };
+                    } else {
+                        current.pages.push(p.page);
+                        current.text += '\n' + p.text;
+                    }
+                }
+                if (current.text.length > 0) chunks.push({ ...current, endPage: current.pages[current.pages.length - 1] });
+                
+                updateProcessStatus('loading', `Saving ${chunks.length} chunks...`, 70);
+                
+                // Load existing index
+                let indexData = await puter.kv.get(INDEX_KEY);
+                let index = indexData ? JSON.parse(indexData) : {};
+                
+                // Generate unique ID for this document
+                const docId = `${aircraft}_${manual}_${Date.now()}`;
+                const chunkKeys = [];
+                
+                // Save each chunk separately
+                for (let i = 0; i < chunks.length; i++) {
+                    const chunkKey = `${CHUNK_PREFIX}${docId}_${i}`;
+                    await puter.kv.set(chunkKey, JSON.stringify(chunks[i]));
+                    chunkKeys.push(chunkKey);
+                    updateProcessStatus('loading', `Saving chunk ${i + 1}/${chunks.length}`, 70 + (i / chunks.length) * 25);
                 }
                 
-                updateProcessStatus('loading', 'Saving to database...', 90);
+                // Update index
+                index[docId] = { aircraft, manual, chunks: chunkKeys, totalPages, createdAt: Date.now() };
+                await puter.kv.set(INDEX_KEY, JSON.stringify(index));
                 
-                // Load existing data
-                let data = await puter.kv.get(dbKey);
-                let docs = data ? JSON.parse(data) : {};
-                
-                // Initialize structure
-                if (!docs[aircraft]) docs[aircraft] = {};
-                if (!docs[aircraft][manual]) docs[aircraft][manual] = [];
-                
-                // Add new sections
-                docs[aircraft][manual] = docs[aircraft][manual].concat(sections);
-                
-                // Save
-                await puter.kv.set(dbKey, JSON.stringify(docs));
-                
-                updateProcessStatus('success', `Processed ${sections.length} sections from ${totalPages} pages`, 100);
-                
-                // Refresh stats
+                updateProcessStatus('success', `Done! ${chunks.length} chunks saved.`, 100);
                 await loadDbStats();
                 await loadDbContents();
-                
-            } catch (error) {
-                console.error('Processing error:', error);
-                updateProcessStatus('error', `Error: ${error.message}`, 0);
+            } catch (e) {
+                console.error('Process error:', e);
+                updateProcessStatus('error', `Error: ${e.message}`, 0);
             }
         }
         
@@ -504,194 +292,128 @@
             const spinner = document.getElementById('process-spinner');
             const statusText = document.getElementById('process-status-text');
             const progressBar = document.getElementById('process-progress');
-            const details = document.getElementById('process-details');
-            
             statusText.textContent = text;
             progressBar.style.width = progress + '%';
-            
-            if (type === 'success') {
-                spinner.classList.remove('animate-spin');
-                spinner.style.borderColor = 'var(--efb-success)';
-            } else if (type === 'error') {
-                spinner.classList.remove('animate-spin');
-                spinner.style.borderColor = 'var(--efb-danger)';
-            }
+            if (type === 'success') { spinner.classList.remove('animate-spin'); spinner.style.borderColor = 'var(--efb-success)'; }
+            if (type === 'error') { spinner.classList.remove('animate-spin'); spinner.style.borderColor = 'var(--efb-danger)'; }
         }
         
         async function clearDatabase() {
-            if (!confirm('Are you sure you want to clear the entire database?')) return;
-            
-            await puter.kv.del(dbKey);
-            await loadDbStats();
-            await loadDbContents();
-            alert('Database cleared');
+            if (!confirm('Clear entire database?')) return;
+            try {
+                const indexData = await puter.kv.get(INDEX_KEY);
+                const index = indexData ? JSON.parse(indexData) : {};
+                for (const docId in index) {
+                    for (const chunkKey of index[docId].chunks || []) {
+                        await puter.kv.del(chunkKey);
+                    }
+                }
+                await puter.kv.del(INDEX_KEY);
+                await loadDbStats();
+                await loadDbContents();
+                alert('Database cleared');
+            } catch (e) { alert('Error: ' + e.message); }
         }
         
         async function performSearch() {
             const query = document.getElementById('query-input').value.trim();
             const aircraft = document.getElementById('aircraft-select').value;
             const manual = document.getElementById('manual-select').value;
-            
             if (!query) return;
             
             const resultsPanel = document.getElementById('results-panel');
-            resultsPanel.innerHTML = `
-                <div class="flex items-center gap-2">
-                    <div class="w-4 h-4 border-2 border-[var(--efb-accent)] border-t-transparent rounded-full animate-spin"></div>
-                    <span>Searching...</span>
-                </div>
-            `;
+            resultsPanel.innerHTML = '<div class="flex items-center gap-2"><div class="w-4 h-4 border-2 border-[var(--efb-accent)] border-t-transparent rounded-full animate-spin"></div><span>Searching...</span></div>';
             
             try {
-                // Get relevant chunks
                 const chunks = await searchDatabase(query, aircraft, manual);
-                
                 if (chunks.length === 0) {
-                    resultsPanel.innerHTML = `
-                        <div class="text-center text-[var(--efb-text-dim)] py-10">
-                            <p>No relevant sections found in ${aircraft} ${manual}</p>
-                            <p class="text-sm mt-2">Try different keywords or check another manual</p>
-                        </div>
-                    `;
+                    resultsPanel.innerHTML = '<div class="text-center text-[var(--efb-text-dim)] py-10"><p>No relevant sections found</p><p class="text-sm mt-2">Try different keywords</p></div>';
                     return;
                 }
-                
-                // Call AI with context
                 const answer = await queryAI(query, chunks);
-                
-                // Display results
                 displayResults(answer, chunks);
-                
-            } catch (error) {
-                console.error('Search error:', error);
-                resultsPanel.innerHTML = `
-                    <div class="text-center text-[var(--efb-danger)] py-10">
-                        <p>Error: ${error.message}</p>
-                    </div>
-                `;
+            } catch (e) {
+                console.error('Search error:', e);
+                resultsPanel.innerHTML = `<div class="text-center text-[var(--efb-danger)] py-10"><p>Error: ${e.message}</p></div>`;
             }
         }
         
         async function searchDatabase(query, aircraft, manual) {
-            const data = await puter.kv.get(dbKey);
-            const docs = data ? JSON.parse(data) : {};
+            const indexData = await puter.kv.get(INDEX_KEY);
+            const index = indexData ? JSON.parse(indexData) : {};
             
-            // Get sections for selected aircraft/manual
-            const sections = docs[aircraft]?.[manual] || [];
+            // Find matching document
+            let docId = null;
+            for (const id in index) {
+                if (index[id].aircraft === aircraft && index[id].manual === manual) {
+                    docId = id;
+                    break;
+                }
+            }
+            if (!docId) return [];
             
-            // Simple keyword matching (can be enhanced with semantic search)
+            const chunkKeys = index[docId].chunks || [];
             const queryWords = query.toLowerCase().split(/\s+/).filter(w => w.length > 2);
             
-            const scored = sections.map(section => {
-                const text = (section.title + ' ' + section.text).toLowerCase();
+            // Load and score chunks
+            const scored = [];
+            for (const key of chunkKeys) {
+                const chunkData = await puter.kv.get(key);
+                if (!chunkData) continue;
+                const chunk = JSON.parse(chunkData);
+                const text = chunk.text.toLowerCase();
                 let score = 0;
-                queryWords.forEach(word => {
-                    const matches = (text.match(new RegExp(word, 'g')) || []).length;
-                    score += matches;
-                });
-                return { ...section, score };
-            });
+                queryWords.forEach(w => { score += (text.match(new RegExp(w, 'g')) || []).length; });
+                if (score > 0) scored.push({ ...chunk, score, chunkKey: key });
+            }
             
-            // Sort by score and take top 5
-            const top = scored
-                .filter(s => s.score > 0)
-                .sort((a, b) => b.score - a.score)
-                .slice(0, 5);
-            
-            return top;
+            return scored.sort((a, b) => b.score - a.score).slice(0, 5);
         }
         
         async function queryAI(query, chunks) {
-            const context = chunks.map((c, i) => 
-                `[Section ${i + 1}: ${c.title} (Page ${c.startPage})]\n${c.text.slice(0, 1000)}...`
-            ).join('\n\n---\n\n');
+            const context = chunks.map((c, i) => `[Page ${c.startPage}-${c.endPage || c.startPage}]\n${c.text.slice(0, 2000)}`).join('\n\n---\n\n');
+            const systemPrompt = `You are an FCOM expert. Answer ONLY from provided context. Cite page numbers. Be precise.\n\nContext:\n${context}`;
             
-            const systemPrompt = `You are an FCOM (Flight Crew Operations Manual) expert assistant. 
-            
-STRICT RULES:
-1. Answer ONLY from the provided context. If information is not in the context, say so.
-2. Cite the Section/Chapter in your answer.
-3. Be precise and factual - this is aviation documentation.
-4. If the user asks for the full document, provide the PDF link.
-5. Format answers clearly with bullet points where appropriate.
-
-Context sections:
-${context}`;
-
-            const response = await puter.ai.chat(query, {
-                model: 'claude-3-5-sonnet',
-                system: systemPrompt
-            });
-            
-            return response.message?.content || response.toString();
+            try {
+                const response = await puter.ai.chat(query, { model: 'claude-3-5-sonnet', system: systemPrompt });
+                return response.message?.content || response.toString();
+            } catch (e) {
+                // Fallback if AI fails
+                return `AI query failed: ${e.message}\n\nRelevant pages: ${chunks.map(c => c.startPage).join(', ')}`;
+            }
         }
         
         function displayResults(answer, chunks) {
             const resultsPanel = document.getElementById('results-panel');
-            
-            // Generate PDF link (placeholder - would need actual hosted URL)
-            const pdfLink = '#'; // Would be actual Puter.site URL
-            
             resultsPanel.innerHTML = `
                 <div class="prose prose-invert max-w-none">
                     <div class="mb-6 p-4 bg-[#1a1a1a] rounded-lg border border-[var(--efb-border)]">
                         ${formatAnswer(answer)}
                     </div>
-                    
-                    <div class="mt-6">
-                        <h3 class="section-header">Source Sections</h3>
-                        <div class="space-y-3">
-                            ${chunks.map((c, i) => `
-                                <div class="p-3 bg-[#1a1a1a] rounded border border-[var(--efb-border)]">
-                                    <div class="flex justify-between items-start">
-                                        <span class="text-[var(--efb-accent)] font-bold">${c.title}</span>
-                                        <span class="text-xs text-[var(--efb-text-dim)]">Page ${c.startPage}</span>
-                                    </div>
-                                    <p class="text-sm text-[var(--efb-text-dim)] mt-2 line-clamp-3">${c.text.slice(0, 200)}...</p>
-                                </div>
-                            `).join('')}
-                        </div>
+                    <h3 class="section-header">Source Sections</h3>
+                    <div class="space-y-3">
+                        ${chunks.map(c => `
+                            <div class="p-3 bg-[#1a1a1a] rounded border border-[var(--efb-border)]">
+                                <span class="text-[var(--efb-accent)] font-bold">Pages ${c.startPage}-${c.endPage || c.startPage}</span>
+                                <p class="text-sm text-[var(--efb-text-dim)] mt-1">${c.text.slice(0, 300)}...</p>
+                            </div>
+                        `).join('')}
                     </div>
-                    
-                    <div class="mt-6 text-center">
-                        <a href="${pdfLink}" class="text-[var(--efb-accent)] hover:underline" target="_blank">
-                            📄 View Full PDF Document
-                        </a>
-                    </div>
-                </div>
-            `;
+                </div>`;
         }
         
         function formatAnswer(text) {
-            // Simple markdown-like formatting
-            return text
-                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                .replace(/^[-•]\s+(.+)/gm, '<li>$1</li>')
-                .replace(/(<li>.*<\/li>)/s, '<ul class="list-disc list-inside ml-4">$1</ul>')
-                .replace(/\n\n/g, '</p><p class="mt-3">')
-                .replace(/^/, '<p>')
-                .replace(/$/, '</p>');
+            return text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                       .replace(/\n\n/g, '</p><p class="mt-3">')
+                       .replace(/^/, '<p>')
+                       .replace(/$/, '</p>');
         }
         
         function updateStatus(type, text) {
             const indicator = document.getElementById('status-indicator');
             const statusText = document.getElementById('status-text');
-            
             indicator.className = 'w-3 h-3 rounded-full status-indicator';
-            
-            switch (type) {
-                case 'ready':
-                    indicator.style.backgroundColor = 'var(--efb-success)';
-                    break;
-                case 'loading':
-                    indicator.style.backgroundColor = 'var(--efb-warning)';
-                    break;
-                case 'error':
-                    indicator.style.backgroundColor = 'var(--efb-danger)';
-                    break;
-            }
-            
+            indicator.style.backgroundColor = type === 'ready' ? 'var(--efb-success)' : type === 'loading' ? 'var(--efb-warning)' : 'var(--efb-danger)';
             statusText.textContent = text;
         }
     </script>
