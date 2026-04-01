@@ -641,18 +641,27 @@ Remember: If the answer is not in the text above, say so. Do not make things up.
                 updateProcessStatus('loading', `PDF loaded: ${totalPages} pages`, 5);
                 
                 const pages = [];
+                let totalChars = 0;
+                
                 for (let i = 1; i <= totalPages; i++) {
                     const page = await pdf.getPage(i);
                     const textContent = await page.getTextContent();
                     
-                    // Better text extraction - handle items with proper spacing
+                    // Try multiple extraction methods
                     let pageText = '';
-                    let lastY = null;
                     
-                    for (const item of textContent.items) {
-                        if (item.str === ' ') continue;
+                    // Method 1: Standard extraction with positions
+                    let items = textContent.items.sort((a, b) => {
+                        // Sort by Y (descending) then X (ascending)
+                        const yDiff = b.transform[5] - a.transform[5];
+                        if (Math.abs(yDiff) > 5) return yDiff;
+                        return a.transform[4] - b.transform[4];
+                    });
+                    
+                    let lastY = null;
+                    for (const item of items) {
+                        if (!item.str || item.str.trim() === '') continue;
                         
-                        // Check if we're on a new line (different Y position)
                         if (lastY !== null && Math.abs(item.transform[5] - lastY) > 5) {
                             pageText += '\n';
                         } else if (pageText.length > 0 && !pageText.endsWith(' ') && !pageText.endsWith('\n')) {
@@ -663,13 +672,29 @@ Remember: If the answer is not in the text above, say so. Do not make things up.
                         lastY = item.transform[5];
                     }
                     
-                    // Only add if we got meaningful text
+                    // If text is too short, try simple join
+                    if (pageText.trim().length < 50) {
+                        pageText = textContent.items.map(item => item.str).join(' ');
+                    }
+                    
+                    // Count actual letters/numbers
+                    const meaningfulChars = (pageText.match(/[a-zA-Z0-9]/g) || []).length;
+                    totalChars += meaningfulChars;
+                    
                     if (pageText.trim().length > 10) {
                         pages.push({ page: i, text: pageText.trim() });
                     }
                     
-                    updateProcessStatus('loading', `Extracting page ${i}/${totalPages}`, 5 + (i / totalPages) * 50);
+                    updateProcessStatus('loading', `Extracting page ${i}/${totalPages} (${meaningfulChars} chars)`, 5 + (i / totalPages) * 50);
                 }
+                
+                // Check if we got meaningful text
+                if (totalChars < 1000) {
+                    updateProcessStatus('error', `Warning: Only ${totalChars} readable characters found. PDF may be image-based (scanned). Try a different PDF or use OCR.`, 0);
+                    return;
+                }
+                
+                updateProcessStatus('loading', `Found ${totalChars} characters. Chunking...`, 60);
                 
                 updateProcessStatus('loading', 'Chunking text...', 60);
                 const chunks = [];
