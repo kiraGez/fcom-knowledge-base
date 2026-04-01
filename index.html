@@ -97,7 +97,8 @@
             </div>
             
             <div class="p-4 border-b border-[var(--efb-border)]">
-                <button id="new-chat-btn" class="w-full efb-btn px-3 py-2 rounded text-sm">+ New Chat</button>
+                <button id="new-chat-btn" class="w-full efb-btn px-3 py-2 rounded text-sm mb-2">+ New Chat</button>
+                <button id="debug-btn" class="w-full efb-btn px-3 py-2 rounded text-sm text-xs">Debug: Show All Chunks</button>
             </div>
             
             <div class="mt-auto p-4">
@@ -230,6 +231,7 @@
             document.getElementById('send-btn').addEventListener('click', sendMessage);
             document.getElementById('chat-input').addEventListener('keypress', e => { if (e.key === 'Enter') sendMessage(); });
             document.getElementById('new-chat-btn').addEventListener('click', clearChat);
+            document.getElementById('debug-btn').addEventListener('click', debugShowAllChunks);
             
             document.getElementById('admin-toggle-btn').addEventListener('click', () => {
                 document.getElementById('admin-panel').classList.add('visible');
@@ -242,6 +244,49 @@
             document.getElementById('process-pdf-btn').addEventListener('click', processPdf);
             document.getElementById('refresh-db-btn').addEventListener('click', loadDbContents);
             document.getElementById('clear-db-btn').addEventListener('click', clearDatabase);
+        }
+        
+        async function debugShowAllChunks() {
+            const messagesEl = document.getElementById('chat-messages');
+            const aircraft = document.getElementById('aircraft-select').value;
+            const manual = document.getElementById('manual-select').value;
+            
+            if (messagesEl.querySelector('.text-center')) {
+                messagesEl.innerHTML = '';
+            }
+            
+            messagesEl.innerHTML += `<div class="message message-user">Debug: Show all chunks for ${aircraft} ${manual}</div>`;
+            
+            const indexData = await puter.kv.get(INDEX_KEY);
+            const index = indexData ? JSON.parse(indexData) : {};
+            
+            let docId = null;
+            for (const id in index) {
+                if (index[id].aircraft === aircraft && index[id].manual === manual) {
+                    docId = id;
+                    break;
+                }
+            }
+            
+            if (!docId) {
+                messagesEl.innerHTML += `<div class="message message-assistant"><p>No document found for ${aircraft} ${manual}</p></div>`;
+                return;
+            }
+            
+            const chunkKeys = index[docId].chunks || [];
+            messagesEl.innerHTML += `<div class="message message-assistant"><p>Found ${chunkKeys.length} chunks. First 3:</p></div>`;
+            
+            for (let i = 0; i < Math.min(3, chunkKeys.length); i++) {
+                const chunkData = await puter.kv.get(chunkKeys[i]);
+                if (chunkData) {
+                    const chunk = JSON.parse(chunkData);
+                    messagesEl.innerHTML += `
+                        <div class="message message-assistant">
+                            <strong class="text-[var(--efb-accent)]">Chunk ${i+1} (Pages ${chunk.startPage}-${chunk.endPage || chunk.startPage})</strong>
+                            <div class="text-xs text-[var(--efb-text-dim)] mt-1 font-mono whitespace-pre-wrap max-h-40 overflow-y-auto">${escapeHtml(chunk.text.slice(0, 500))}...</div>
+                        </div>`;
+                }
+            }
         }
         
         async function loadDbStats() {
@@ -383,7 +428,16 @@
             if (!docId) return [];
             
             const chunkKeys = index[docId].chunks || [];
-            const queryWords = query.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+            
+            // Get all words, including short ones
+            const queryWords = query.toLowerCase().split(/\s+/).filter(w => w.length > 1);
+            
+            // Also add partial matches for key terms
+            const searchTerms = [...queryWords];
+            // Add common abbreviations
+            if (query.toLowerCase().includes('turbulence')) searchTerms.push('turb', 'turbulent');
+            if (query.toLowerCase().includes('speed')) searchTerms.push('kias', 'mach', 'kt', 'speeds');
+            if (query.toLowerCase().includes('penetration')) searchTerms.push('penetrat', 'penetration');
             
             const scored = [];
             for (const key of chunkKeys) {
@@ -391,12 +445,32 @@
                 if (!chunkData) continue;
                 const chunk = JSON.parse(chunkData);
                 const text = chunk.text.toLowerCase();
+                
                 let score = 0;
-                queryWords.forEach(w => { score += (text.match(new RegExp(w, 'g')) || []).length; });
-                if (score > 0) scored.push({ ...chunk, score, chunkKey: key });
+                let matchCount = 0;
+                
+                for (const word of searchTerms) {
+                    const regex = new RegExp(word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+                    const matches = text.match(regex);
+                    if (matches) {
+                        score += matches.length * (queryWords.includes(word) ? 2 : 1);
+                        matchCount++;
+                    }
+                }
+                
+                // Bonus for matching multiple terms
+                if (matchCount >= 2) score *= 1.5;
+                if (matchCount >= 3) score *= 2;
+                
+                if (score > 0) {
+                    scored.push({ ...chunk, score, chunkKey: key, matchCount });
+                }
             }
             
-            return scored.sort((a, b) => b.score - a.score).slice(0, 5);
+            // Sort by score, then by match count
+            return scored
+                .sort((a, b) => b.score - a.score || b.matchCount - a.matchCount)
+                .slice(0, 7); // Return top 7 for better context
         }
         
         async function queryAI(query, chunks, history) {
