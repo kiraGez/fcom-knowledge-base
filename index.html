@@ -304,32 +304,39 @@
             messagesEl.scrollTop = messagesEl.scrollHeight;
             
             try {
-                // Check if user wants to see source
-                const showSource = query.toLowerCase().includes('show source') || query.toLowerCase().includes('original text');
-                
-                // Search for relevant chunks
                 const aircraft = document.getElementById('aircraft-select').value;
                 const manual = document.getElementById('manual-select').value;
-                const chunks = await searchDatabase(query, aircraft, manual);
                 
-                if (chunks.length === 0) {
+                // Check if user wants to see source
+                const showSourceCmd = query.toLowerCase().match(/show (source|original|text|page)/);
+                
+                if (showSourceCmd && lastChunks.length > 0) {
+                    // Show source directly
                     removeTyping(typingId);
-                    messagesEl.innerHTML += `<div class="message message-assistant"><p>No relevant information found in ${aircraft} ${manual}. Try uploading documents first or checking a different manual.</p></div>`;
+                    displaySourceChunks(lastChunks, messagesEl);
                 } else {
-                    lastChunks = chunks;
+                    // Normal query - search and respond
+                    const chunks = await searchDatabase(query, aircraft, manual);
                     
-                    // Build conversation context
-                    conversationHistory.push({ role: 'user', content: query });
-                    
-                    // Query AI
-                    const response = await queryAI(query, chunks, conversationHistory);
-                    conversationHistory.push({ role: 'assistant', content: response });
-                    
-                    removeTyping(typingId);
-                    
-                    // Add response with citations
-                    let responseHtml = formatResponse(response, chunks);
-                    messagesEl.innerHTML += `<div class="message message-assistant">${responseHtml}</div>`;
+                    if (chunks.length === 0) {
+                        removeTyping(typingId);
+                        messagesEl.innerHTML += `<div class="message message-assistant"><p>No relevant information found in ${aircraft} ${manual}. Make sure the manual is uploaded.</p></div>`;
+                    } else {
+                        lastChunks = chunks;
+                        
+                        // Add to conversation history
+                        conversationHistory.push({ role: 'user', content: query });
+                        
+                        // Query AI
+                        const response = await queryAI(query, chunks, conversationHistory);
+                        conversationHistory.push({ role: 'assistant', content: response });
+                        
+                        removeTyping(typingId);
+                        
+                        // Add response with citations
+                        let responseHtml = formatResponse(response, chunks);
+                        messagesEl.innerHTML += `<div class="message message-assistant">${responseHtml}</div>`;
+                    }
                 }
             } catch (e) {
                 console.error('Send error:', e);
@@ -338,6 +345,23 @@
             }
             
             messagesEl.scrollTop = messagesEl.scrollHeight;
+        }
+        
+        function displaySourceChunks(chunks, messagesEl) {
+            let html = `<div class="message message-assistant"><strong class="text-[var(--efb-accent)]">Source Text from Manual:</strong>`;
+            
+            for (const chunk of chunks) {
+                html += `
+                    <div class="mt-4 p-3 bg-[#0a0a0a] rounded border border-[var(--efb-border)]">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-[var(--efb-accent)] font-bold">Pages ${chunk.startPage}-${chunk.endPage || chunk.startPage}</span>
+                        </div>
+                        <div class="text-sm text-[var(--efb-text-dim)] font-mono whitespace-pre-wrap">${escapeHtml(chunk.text.slice(0, 2000))}${chunk.text.length > 2000 ? '...' : ''}</div>
+                    </div>`;
+            }
+            
+            html += '</div>';
+            messagesEl.innerHTML += html;
         }
         
         function removeTyping(id) {
@@ -376,35 +400,38 @@
         }
         
         async function queryAI(query, chunks, history) {
-            const contextInfo = chunks.map((c, i) => 
-                `[Pages ${c.startPage}-${c.endPage || c.startPage}]: ${c.text.slice(0, 2500)}`
-            ).join('\n\n---\n\n');
+            // Build strict context from PDF chunks
+            const contextParts = chunks.map((c, i) => 
+                `[Page ${c.startPage}-${c.endPage || c.startPage}]:\n${c.text.slice(0, 3000)}`
+            );
+            const contextText = contextParts.join('\n\n---\n\n');
             
-            const systemPrompt = `You are an expert FCOM (Flight Crew Operations Manual) assistant. You help pilots and crew members understand flight procedures, limitations, and systems.
+            const systemPrompt = `You are an FCOM search assistant. Your ONLY job is to answer questions using the provided PDF text.
 
-IMPORTANT RULES:
-1. Answer from the provided context only. If information is not in the context, say so.
-2. Be conversational but precise - this is aviation documentation.
-3. When citing information, mention page numbers naturally in your response (e.g., "According to pages 42-45...").
-4. Use formatting like bullet points and bold text to make answers clear.
-5. If the user asks for "source" or "original text", provide the exact text from the context.
-6. For procedures, number the steps clearly.
-7. For limitations, state exact values.
+CRITICAL RULES:
+1. ONLY use information from the provided context. If it's not in the context, say "I don't have that information in the manual."
+2. Quote directly from the text when possible. Use exact phrases.
+3. Always cite the page number when providing information.
+4. Do NOT use outside knowledge or general aviation knowledge.
+5. If asked to show source/original text, provide the exact text from context.
 
-Context from the manual:
-${contextInfo}`;
+Provided text from the PDF:
+${contextText}
 
-            // Build messages array for Puter AI
-            const messages = [
-                { role: 'system', content: systemPrompt },
-                ...history.slice(-6) // Keep last 3 exchanges for context
-            ];
+Remember: If the answer is not in the text above, say so. Do not make things up.`;
+
+            // Build full conversation for context
+            const messages = [{ role: 'system', content: systemPrompt }];
+            
+            // Add conversation history (last 10 messages)
+            for (const msg of history.slice(-10)) {
+                messages.push({ role: msg.role, content: msg.content });
+            }
             
             try {
-                // Use Puter AI chat - use claude-sonnet (valid Puter model name)
-                let response = await puter.ai.chat(query, { 
-                    model: 'claude-sonnet',
-                    system: systemPrompt 
+                // Use Puter AI with full conversation
+                let response = await puter.ai.chat(messages, { 
+                    model: 'claude-sonnet'
                 });
                 
                 // Handle Puter's response format (array of content blocks)
