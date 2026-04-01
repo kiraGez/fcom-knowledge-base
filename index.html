@@ -434,33 +434,46 @@ ${contextInfo}`;
         
         function formatResponse(text, chunks) {
             // Ensure text is a string
-            if (typeof text !== 'string') {
+            if (Array.isArray(text)) {
+                // Handle Puter's array format
+                text = text
+                    .filter(block => block.type === 'text')
+                    .map(block => block.text)
+                    .join('\n\n');
+            }
+            if (typeof text !== 'object') {
+                text = String(text);
+            } else {
                 text = JSON.stringify(text);
             }
             
             // Format markdown-like syntax
             let html = text
+                // Escape HTML first
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
                 // Headers
                 .replace(/^### (.*$)/gm, '<h4 class="text-[var(--efb-accent)] font-bold mt-4 mb-2">$1</h4>')
                 .replace(/^## (.*$)/gm, '<h3 class="text-[var(--efb-accent)] font-bold text-lg mt-4 mb-2">$1</h3>')
-                .replace(/^# (.*$)/gm, '<h2 class="text-[var(--efb-accent)] font-bold text-xl mt-4 mb-2">$1</h2>')
+                .replace(/^# (.*$)/gm, '<h2 class="text-[var(--efb-accent)] font-bold text-xl mt-2 mb-2">$1</h2>')
+                // Subscript (V~RA~)
+                .replace(/([A-Z])~([^~]+)~/g, '$1<sub>$2</sub>')
                 // Bold and italic
-                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*([^*]+)\*/g, '<em>$1</em>')
                 // Code blocks
                 .replace(/```([\s\S]*?)```/g, '<code class="block bg-[#0a0a0a] p-2 rounded my-2">$1</code>')
                 .replace(/`([^`]+)`/g, '<code class="bg-[#0a0a0a] px-1 rounded">$1</code>')
-                // Tables
-                .replace(/\|(.+)\|\n\|[-| ]+\|\n((?:\|.+\|\n?)+)/g, '<table class="w-full my-2 border-collapse"><thead><tr>$1</tr></thead><tbody>$2</tbody></table>')
                 // Lists
                 .replace(/^[-•]\s+(.+)/gm, '<li>$1</li>')
-                .replace(/(<li>.*<\/li>\n?)+/g, '<ul class="list-disc list-inside my-2">$&</ul>')
+                .replace(/(<li>.*<\/li>\n?)+/g, '<ul class="list-disc list-inside my-2 pl-2">$&</ul>')
                 .replace(/^\d+\.\s+(.+)/gm, '<li>$1</li>')
-                // Blockquotes
-                .replace(/^>\s*(.+)/gm, '<blockquote class="border-l-2 border-[var(--efb-accent)] pl-3 my-2 italic">$1</blockquote>')
+                // Blockquotes (already escaped, so handle after)
+                .replace(/^⚠️ /gm, '⚠️ ')
                 // Horizontal rules
                 .replace(/^---$/gm, '<hr class="border-[var(--efb-border)] my-3">')
-                // Paragraphs
+                // Paragraphs (must be last)
                 .replace(/\n\n/g, '</p><p class="my-2">')
                 .replace(/^/, '<p class="my-2">')
                 .replace(/$/, '</p>');
