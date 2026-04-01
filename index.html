@@ -424,6 +424,11 @@ ${contextInfo}`;
         }
         
         function formatResponse(text, chunks) {
+            // Ensure text is a string
+            if (typeof text !== 'string') {
+                text = JSON.stringify(text);
+            }
+            
             // Format markdown-like syntax
             let html = text
                 .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
