@@ -454,78 +454,72 @@
             const chunkKeys = index[docId].chunks || [];
             const queryLower = query.toLowerCase();
             
-            // Build search terms with weights
-            const searchTerms = [];
+            // Define search terms based on query
+            const termWeights = {
+                'turbulent': 10,
+                'turbulence': 10,
+                'turb': 5,
+                'penetration': 10,
+                'penetrat': 5,
+                'penetr': 5,
+                'speed': 3,
+                'knots': 3,
+                'kias': 3,
+                'mach': 3,
+                'severe': 5
+            };
             
-            // Full phrase (highest weight)
-            searchTerms.push({ term: queryLower, weight: 10 });
-            
-            // Key individual terms with high weights
-            const keyTerms = [
-                { match: 'turb', terms: ['turbulent', 'turbulence', 'turb'], weight: 5 },
-                { match: 'penetr', terms: ['penetration', 'penetrat'], weight: 5 },
-                { match: 'speed', terms: ['speed', 'knots', 'kias', 'mach'], weight: 3 },
-                { match: 'severe', terms: ['severe', 'sever'], weight: 3 },
-            ];
-            
-            for (const kt of keyTerms) {
-                if (queryLower.includes(kt.match)) {
-                    for (const t of kt.terms) {
-                        searchTerms.push({ term: t, weight: kt.weight });
-                    }
-                }
-            }
-            
-            // All query words
-            const words = queryLower.split(/\s+/).filter(w => w.length > 2);
-            for (const w of words) {
-                searchTerms.push({ term: w, weight: 2 });
-            }
+            // Get words from query
+            const queryWords = queryLower.split(/\s+/).filter(w => w.length > 2);
             
             const scored = [];
-            for (const key of chunkKeys) {
-                const chunkData = await puter.kv.get(key);
+            
+            // Load ALL chunks first and check for matches
+            for (let i = 0; i < chunkKeys.length; i++) {
+                const chunkData = await puter.kv.get(chunkKeys[i]);
                 if (!chunkData) continue;
+                
                 const chunk = JSON.parse(chunkData);
                 const text = chunk.text.toLowerCase();
                 
                 let score = 0;
-                let matchedTerms = 0;
-                let matchedWords = new Set();
+                let matchDetails = [];
                 
-                for (const { term, weight } of searchTerms) {
-                    const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                    const regex = new RegExp(escaped, 'gi');
-                    const matches = text.match(regex);
-                    if (matches && matches.length > 0) {
-                        score += matches.length * weight;
-                        matchedTerms++;
-                        matchedWords.add(term);
+                // Check each term
+                for (const [term, weight] of Object.entries(termWeights)) {
+                    if (queryLower.includes(term) || queryWords.some(w => term.includes(w) || w.includes(term))) {
+                        const count = (text.match(new RegExp(term, 'gi')) || []).length;
+                        if (count > 0) {
+                            score += count * weight;
+                            matchDetails.push(`${term}(${count})`);
+                        }
                     }
                 }
                 
-                // Strong boost for matching multiple distinct terms
-                if (matchedWords.size >= 3) score *= 3;
-                if (matchedWords.size >= 4) score *= 2;
+                // Also check query words directly
+                for (const word of queryWords) {
+                    const count = (text.match(new RegExp(word, 'gi')) || []).length;
+                    if (count > 0 && !matchDetails.some(m => m.includes(word))) {
+                        score += count * 2;
+                    }
+                }
                 
                 if (score > 0) {
                     scored.push({ 
                         ...chunk, 
                         score, 
-                        chunkKey: key, 
-                        matchedTerms,
-                        matchedWords: [...matchedWords]
+                        chunkKey: chunkKeys[i],
+                        matchDetails: matchDetails.join(', ')
                     });
                 }
             }
             
-            // Sort by matched terms first, then score
-            scored.sort((a, b) => {
-                // Prioritize chunks that matched more distinct search terms
-                if (b.matchedWords.length !== a.matchedWords.length) {
-                    return b.matchedWords.length - a.matchedWords.length;
-                }
-                return b.score - a.score;
+            // Sort by score descending
+            scored.sort((a, b) => b.score - a.score);
+            
+            console.log('Search results for:', queryLower);
+            scored.slice(0, 5).forEach(s => {
+                console.log(`  Page ${s.startPage}: score=${s.score}, matches=${s.matchDetails}`);
             });
             
             return scored.slice(0, 10);
