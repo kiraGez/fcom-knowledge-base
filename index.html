@@ -261,7 +261,7 @@
                 messagesEl.innerHTML = '';
             }
             
-            messagesEl.innerHTML += `<div class="message message-user">Debug: Show chunk 5 (pages 80-98) content</div>`;
+            messagesEl.innerHTML += `<div class="message message-user">Debug: Search for '270 knots' in all chunks</div>`;
             
             const indexData = await puter.kv.get(INDEX_KEY);
             const index = indexData ? JSON.parse(indexData) : {};
@@ -274,37 +274,48 @@
                 }
             }
             
-            if (!docId) {
-                messagesEl.innerHTML += `<div class="message message-assistant"><p>No document found</p></div>`;
-                return;
-            }
+            if (!docId) return;
             
             const chunkKeys = index[docId].chunks || [];
             
-            // Get chunk 5 (index 4)
-            if (chunkKeys.length >= 5) {
-                const chunkData = await puter.kv.get(chunkKeys[4]);
+            // Search for "270" in all chunks
+            let found270 = [];
+            for (let i = 0; i < chunkKeys.length; i++) {
+                const chunkData = await puter.kv.get(chunkKeys[i]);
                 if (chunkData) {
                     const chunk = JSON.parse(chunkData);
-                    messagesEl.innerHTML += `
-                        <div class="message message-assistant">
-                            <strong>Chunk 5: Pages ${chunk.startPage}-${chunk.endPage || chunk.startPage}</strong>
-                            <p class="text-sm mt-2">Length: ${chunk.text.length} chars</p>
-                            <p class="text-sm">Contains 'turbulent': ${chunk.text.toLowerCase().includes('turbulent') ? '✅ YES' : '❌ NO'}</p>
-                            <p class="text-sm">Contains 'penetration': ${chunk.text.toLowerCase().includes('penetration') ? '✅ YES' : '❌ NO'}</p>
-                            <p class="text-sm">Contains '270 knots': ${chunk.text.includes('270') ? '✅ YES' : '❌ NO'}</p>
-                            <div class="text-xs text-[var(--efb-text-dim)] mt-3 font-mono whitespace-pre-wrap max-h-96 overflow-y-auto">${escapeHtml(chunk.text)}</div>
-                        </div>`;
+                    if (chunk.text.includes('270')) {
+                        found270.push({
+                            chunkNum: i + 1,
+                            startPage: chunk.startPage,
+                            endPage: chunk.endPage || chunk.startPage,
+                            text: chunk.text
+                        });
+                    }
                 }
             }
             
-            // Also run a search test
-            messagesEl.innerHTML += `<div class="message message-assistant"><strong>Search test for 'turbulence penetration speed':</strong></div>`;
+            messagesEl.innerHTML += `<div class="message message-assistant"><p>Found '270' in ${found270.length} chunks:</p></div>`;
             
-            const queryLower = 'turbulence penetration speed';
-            const termWeights = { 'turbulent': 10, 'turbulence': 10, 'penetration': 10, 'speed': 3 };
+            for (const f of found270) {
+                // Find context around 270
+                const idx = f.text.indexOf('270');
+                const context = f.text.slice(Math.max(0, idx - 100), idx + 200);
+                
+                messagesEl.innerHTML += `
+                    <div class="message message-assistant">
+                        <strong>Chunk ${f.chunkNum}: Pages ${f.startPage}-${f.endPage}</strong>
+                        <div class="text-xs text-[var(--efb-text-dim)] mt-1 font-mono">...${escapeHtml(context)}...</div>
+                    </div>`;
+            }
             
-            for (let i = 0; i < Math.min(10, chunkKeys.length); i++) {
+            // Also show search scores for "turbulence penetration speed"
+            messagesEl.innerHTML += `<div class="message message-assistant"><strong>Search scores for 'turbulence penetration speed':</strong></div>`;
+            
+            const termWeights = { 'turbulent': 10, 'turbulence': 10, 'penetration': 10, 'speed': 3, '270': 20, 'knots': 5 };
+            let scores = [];
+            
+            for (let i = 0; i < chunkKeys.length; i++) {
                 const chunkData = await puter.kv.get(chunkKeys[i]);
                 if (chunkData) {
                     const chunk = JSON.parse(chunkData);
@@ -321,12 +332,18 @@
                     }
                     
                     if (score > 0) {
-                        messagesEl.innerHTML += `<div class="message message-assistant">
-                            <strong>Chunk ${i+1} (Pages ${chunk.startPage}-${chunk.endPage || chunk.startPage}): score=${score}</strong>
-                            <span class="text-xs text-[var(--efb-text-dim)]">${details.join(', ')}</span>
-                        </div>`;
+                        scores.push({ chunkNum: i + 1, startPage: chunk.startPage, endPage: chunk.endPage || chunk.startPage, score, details });
                     }
                 }
+            }
+            
+            // Sort by score and show top 10
+            scores.sort((a, b) => b.score - a.score);
+            for (const s of scores.slice(0, 10)) {
+                messagesEl.innerHTML += `<div class="message message-assistant">
+                    <strong>Chunk ${s.chunkNum} (Pages ${s.startPage}-${s.endPage}): score=${s.score}</strong>
+                    <span class="text-xs text-[var(--efb-text-dim)]">${s.details.join(', ')}</span>
+                </div>`;
             }
         }
         
