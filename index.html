@@ -261,7 +261,7 @@
                 messagesEl.innerHTML = '';
             }
             
-            messagesEl.innerHTML += `<div class="message message-user">Debug: Check first 5 chunks and page coverage</div>`;
+            messagesEl.innerHTML += `<div class="message message-user">Debug: Show chunk 5 (pages 80-98) content</div>`;
             
             const indexData = await puter.kv.get(INDEX_KEY);
             const index = indexData ? JSON.parse(indexData) : {};
@@ -280,39 +280,53 @@
             }
             
             const chunkKeys = index[docId].chunks || [];
-            messagesEl.innerHTML += `<div class="message message-assistant"><p>Total chunks: ${chunkKeys.length}</p></div>`;
             
-            // Show first 5 chunks to see page coverage
-            messagesEl.innerHTML += `<div class="message message-assistant"><strong>First 5 chunks (page ranges):</strong></div>`;
-            for (let i = 0; i < Math.min(5, chunkKeys.length); i++) {
-                const chunkData = await puter.kv.get(chunkKeys[i]);
+            // Get chunk 5 (index 4)
+            if (chunkKeys.length >= 5) {
+                const chunkData = await puter.kv.get(chunkKeys[4]);
                 if (chunkData) {
                     const chunk = JSON.parse(chunkData);
                     messagesEl.innerHTML += `
                         <div class="message message-assistant">
-                            <strong>Chunk ${i+1}: Pages ${chunk.startPage}-${chunk.endPage || chunk.startPage}</strong>
-                            <div class="text-xs text-[var(--efb-text-dim)] mt-1">${escapeHtml(chunk.text.slice(0, 300))}...</div>
+                            <strong>Chunk 5: Pages ${chunk.startPage}-${chunk.endPage || chunk.startPage}</strong>
+                            <p class="text-sm mt-2">Length: ${chunk.text.length} chars</p>
+                            <p class="text-sm">Contains 'turbulent': ${chunk.text.toLowerCase().includes('turbulent') ? '✅ YES' : '❌ NO'}</p>
+                            <p class="text-sm">Contains 'penetration': ${chunk.text.toLowerCase().includes('penetration') ? '✅ YES' : '❌ NO'}</p>
+                            <p class="text-sm">Contains '270 knots': ${chunk.text.includes('270') ? '✅ YES' : '❌ NO'}</p>
+                            <div class="text-xs text-[var(--efb-text-dim)] mt-3 font-mono whitespace-pre-wrap max-h-96 overflow-y-auto">${escapeHtml(chunk.text)}</div>
                         </div>`;
                 }
             }
             
-            // Check if page 96 exists
-            let found96 = false;
-            for (let i = 0; i < chunkKeys.length; i++) {
+            // Also run a search test
+            messagesEl.innerHTML += `<div class="message message-assistant"><strong>Search test for 'turbulence penetration speed':</strong></div>`;
+            
+            const queryLower = 'turbulence penetration speed';
+            const termWeights = { 'turbulent': 10, 'turbulence': 10, 'penetration': 10, 'speed': 3 };
+            
+            for (let i = 0; i < Math.min(10, chunkKeys.length); i++) {
                 const chunkData = await puter.kv.get(chunkKeys[i]);
                 if (chunkData) {
                     const chunk = JSON.parse(chunkData);
-                    if (chunk.startPage <= 96 && (chunk.endPage || chunk.startPage) >= 96) {
-                        messagesEl.innerHTML += `<div class="message message-assistant"><p class="text-[var(--efb-success)]">✅ Page 96 is in chunk: Pages ${chunk.startPage}-${chunk.endPage || chunk.startPage}</p></div>`;
-                        found96 = true;
-                        break;
+                    const text = chunk.text.toLowerCase();
+                    let score = 0;
+                    let details = [];
+                    
+                    for (const [term, weight] of Object.entries(termWeights)) {
+                        const count = (text.match(new RegExp(term, 'gi')) || []).length;
+                        if (count > 0) {
+                            score += count * weight;
+                            details.push(`${term}(${count})`);
+                        }
+                    }
+                    
+                    if (score > 0) {
+                        messagesEl.innerHTML += `<div class="message message-assistant">
+                            <strong>Chunk ${i+1} (Pages ${chunk.startPage}-${chunk.endPage || chunk.startPage}): score=${score}</strong>
+                            <span class="text-xs text-[var(--efb-text-dim)]">${details.join(', ')}</span>
+                        </div>`;
                     }
                 }
-            }
-            
-            if (!found96) {
-                messagesEl.innerHTML += `<div class="message message-assistant"><p class="text-[var(--efb-danger)]">❌ PAGE 96 IS MISSING! The turbulence penetration speed info is not in the database.</p>
-                    <p class="text-sm mt-2">Solution: Clear database and re-upload PDF. The chunking may have skipped early pages.</p></div>`;
             }
         }
         
