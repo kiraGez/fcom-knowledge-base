@@ -202,7 +202,7 @@
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
         
-        const ADMIN_USERNAME = 'kiraGez1';
+        const ADMIN_USERNAME = 'cool_ball_2253';
         const MAX_CHUNK_SIZE = 35000;
         const INDEX_KEY = 'fcom_index';
         const CHUNK_PREFIX = 'fcom_';
@@ -434,16 +434,31 @@
             if (!docId) return [];
             
             const chunkKeys = index[docId].chunks || [];
+            const queryLower = query.toLowerCase();
             
-            // Get all words, including short ones
-            const queryWords = query.toLowerCase().split(/\s+/).filter(w => w.length > 1);
+            // Extract key terms and phrases
+            const searchTerms = [];
             
-            // Also add partial matches for key terms
-            const searchTerms = [...queryWords];
-            // Add common abbreviations
-            if (query.toLowerCase().includes('turbulence')) searchTerms.push('turb', 'turbulent');
-            if (query.toLowerCase().includes('speed')) searchTerms.push('kias', 'mach', 'kt', 'speeds');
-            if (query.toLowerCase().includes('penetration')) searchTerms.push('penetrat', 'penetration');
+            // Add the full query as a phrase
+            searchTerms.push({ term: queryLower, weight: 5 });
+            
+            // Add individual words
+            const words = queryLower.split(/\s+/).filter(w => w.length > 2);
+            words.forEach(w => searchTerms.push({ term: w, weight: 2 }));
+            
+            // Add partial matches for key aviation terms
+            if (queryLower.includes('turb')) {
+                searchTerms.push({ term: 'turbulent', weight: 3 });
+                searchTerms.push({ term: 'turbulence', weight: 3 });
+                searchTerms.push({ term: 'penetration', weight: 2 });
+                searchTerms.push({ term: 'severe', weight: 1 });
+            }
+            if (queryLower.includes('speed') || queryLower.includes('knots')) {
+                searchTerms.push({ term: 'knots', weight: 2 });
+                searchTerms.push({ term: 'kias', weight: 2 });
+                searchTerms.push({ term: 'mach', weight: 2 });
+                searchTerms.push({ term: 'speed', weight: 1 });
+            }
             
             const scored = [];
             for (const key of chunkKeys) {
@@ -453,30 +468,29 @@
                 const text = chunk.text.toLowerCase();
                 
                 let score = 0;
-                let matchCount = 0;
+                let matchedTerms = 0;
                 
-                for (const word of searchTerms) {
-                    const regex = new RegExp(word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
-                    const matches = text.match(regex);
-                    if (matches) {
-                        score += matches.length * (queryWords.includes(word) ? 2 : 1);
-                        matchCount++;
+                for (const { term, weight } of searchTerms) {
+                    const count = (text.match(new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi')) || []).length;
+                    if (count > 0) {
+                        score += count * weight;
+                        matchedTerms++;
                     }
                 }
                 
-                // Bonus for matching multiple terms
-                if (matchCount >= 2) score *= 1.5;
-                if (matchCount >= 3) score *= 2;
+                // Boost for multiple term matches
+                if (matchedTerms >= 3) score *= 2;
+                if (matchedTerms >= 5) score *= 1.5;
                 
                 if (score > 0) {
-                    scored.push({ ...chunk, score, chunkKey: key, matchCount });
+                    scored.push({ ...chunk, score, chunkKey: key, matchedTerms });
                 }
             }
             
-            // Sort by score, then by match count
+            // Sort by score and match count
             return scored
-                .sort((a, b) => b.score - a.score || b.matchCount - a.matchCount)
-                .slice(0, 7); // Return top 7 for better context
+                .sort((a, b) => b.score - a.score || b.matchedTerms - a.matchedTerms)
+                .slice(0, 10);
         }
         
         async function queryAI(query, chunks, history) {
