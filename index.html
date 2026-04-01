@@ -3,197 +3,143 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FCOM Knowledge Base - EFB</title>
+    <title>AI Document Assistant</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://js.puter.com/v2/"></script>
+    
     <style>
         :root {
-            --efb-bg: #0a0a0a;
-            --efb-panel: #141414;
-            --efb-border: #2a2a2a;
-            --efb-accent: #00bfff;
-            --efb-accent-dim: #0088aa;
-            --efb-text: #e0e0e0;
-            --efb-text-dim: #888888;
-            --efb-warning: #ffaa00;
-            --efb-danger: #ff4444;
-            --efb-success: #00ff88;
+            --bg-main: #ffffff;
+            --bg-chat: #f9fafb;
+            --border-color: #e5e7eb;
+            --text-main: #111827;
+            --text-muted: #6b7280;
+            --accent: #2563eb;
+            --user-bubble: #2563eb;
+            --ai-bubble: #ffffff;
         }
-        body { background: var(--efb-bg); color: var(--efb-text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-        .efb-panel { background: var(--efb-panel); border: 1px solid var(--efb-border); }
-        .efb-input { background: #1a1a1a; border: 1px solid var(--efb-border); color: var(--efb-text); }
-        .efb-input:focus { border-color: var(--efb-accent); outline: none; }
-        .efb-btn { background: linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%); border: 1px solid var(--efb-border); color: var(--efb-text); transition: all 0.2s; cursor: pointer; }
-        .efb-btn:hover { border-color: var(--efb-accent); }
-        .efb-btn-primary { background: linear-gradient(180deg, var(--efb-accent) 0%, var(--efb-accent-dim) 100%); border-color: var(--efb-accent); color: #000; font-weight: bold; }
-        .scrollbar-efb::-webkit-scrollbar { width: 6px; }
-        .scrollbar-efb::-webkit-scrollbar-track { background: var(--efb-bg); }
-        .scrollbar-efb::-webkit-scrollbar-thumb { background: var(--efb-border); border-radius: 3px; }
-        .section-header { color: var(--efb-accent); font-weight: bold; border-bottom: 1px solid var(--efb-border); padding-bottom: 0.5rem; margin-bottom: 0.5rem; }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-main: #0f172a;
+                --bg-chat: #1e293b;
+                --border-color: #334155;
+                --text-main: #f8fafc;
+                --text-muted: #94a3b8;
+                --accent: #3b82f6;
+                --user-bubble: #3b82f6;
+                --ai-bubble: #0f172a;
+            }
+        }
+
+        body { background: var(--bg-main); color: var(--text-main); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; overflow: hidden; }
+        .border-custom { border-color: var(--border-color); }
+        .bg-chat { background: var(--bg-chat); }
         
-        .chat-container { display: flex; flex-direction: column; height: 100%; }
-        .chat-messages { flex: 1; overflow-y: auto; padding: 1rem; }
-        .chat-input-area { padding: 1rem; border-top: 1px solid var(--efb-border); }
+        .msg-container { display: flex; flex-direction: column; gap: 1.5rem; padding: 1.5rem; }
+        .msg-wrapper { display: flex; width: 100%; }
+        .msg-wrapper.user { justify-content: flex-end; }
+        .msg-wrapper.ai { justify-content: flex-start; }
         
-        .message { margin-bottom: 1rem; max-width: 90%; }
-        .message-user { margin-left: auto; background: var(--efb-accent-dim); color: #fff; padding: 0.75rem 1rem; border-radius: 1rem 1rem 0.25rem 1rem; }
-        .message-assistant { background: #1a1a1a; padding: 1rem; border-radius: 1rem 1rem 1rem 0.25rem; border: 1px solid var(--efb-border); }
-        .message-assistant p { margin: 0.5rem 0; line-height: 1.6; }
-        .message-assistant ul, .message-assistant ol { margin: 0.5rem 0; padding-left: 1.5rem; }
-        .message-assistant li { margin: 0.25rem 0; }
-        .message-assistant strong { color: var(--efb-accent); }
-        .message-assistant code { background: #0a0a0a; padding: 0.125rem 0.375rem; border-radius: 0.25rem; font-size: 0.875rem; }
+        .msg { max-width: 80%; padding: 1rem 1.25rem; border-radius: 1rem; line-height: 1.6; font-size: 1rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .msg.user { background: var(--user-bubble); color: #ffffff; border-bottom-right-radius: 0.25rem; }
+        .msg.ai { background: var(--ai-bubble); color: var(--text-main); border: 1px solid var(--border-color); border-bottom-left-radius: 0.25rem; }
         
-        .citation-chip { display: inline-block; background: var(--efb-border); color: var(--efb-accent); padding: 0.125rem 0.5rem; border-radius: 1rem; font-size: 0.75rem; margin: 0.25rem 0.25rem 0.25rem 0; cursor: pointer; }
-        .citation-chip:hover { background: var(--efb-accent-dim); }
+        .msg.ai p { margin-bottom: 0.75rem; }
+        .msg.ai p:last-child { margin-bottom: 0; }
+        .msg.ai ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 0.75rem; }
+        .msg.ai li { margin-bottom: 0.25rem; }
+        .msg.ai strong { font-weight: 600; color: inherit; }
         
-        .source-panel { display: none; margin-top: 1rem; padding: 1rem; background: #0a0a0a; border-radius: 0.5rem; border: 1px solid var(--efb-border); }
-        .source-panel.visible { display: block; }
-        .source-text { font-family: 'Roboto Mono', monospace; font-size: 0.875rem; line-height: 1.5; color: var(--efb-text-dim); white-space: pre-wrap; max-height: 300px; overflow-y: auto; }
+        .citation { font-size: 0.8em; background: rgba(148, 163, 184, 0.2); padding: 0.1rem 0.4rem; border-radius: 0.25rem; font-family: monospace; opacity: 0.8; margin-left: 0.25rem; }
+
+        .loader { display: inline-flex; gap: 4px; align-items: center; height: 24px; }
+        .loader span { width: 6px; height: 6px; background-color: var(--text-muted); border-radius: 50%; animation: bounce 1.4s infinite ease-in-out both; }
+        .loader span:nth-child(1) { animation-delay: -0.32s; }
+        .loader span:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
         
-        .typing-indicator { display: flex; gap: 0.25rem; padding: 0.5rem; }
-        .typing-indicator span { width: 8px; height: 8px; background: var(--efb-accent); border-radius: 50%; animation: typing 1.4s infinite; }
-        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
-        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
-        @keyframes typing { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
-        
-        @keyframes pulse-glow { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
-        .status-indicator { animation: pulse-glow 2s infinite; }
-        .admin-panel { display: none; }
-        .admin-panel.visible { display: flex; }
+        .input-box { background: var(--ai-bubble); border: 1px solid var(--border-color); color: var(--text-main); transition: all 0.2s; }
+        .input-box:focus-within { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
     </style>
 </head>
-<body class="min-h-screen">
-    <div class="flex h-screen">
-        <!-- Sidebar -->
-        <aside class="w-64 efb-panel flex flex-col flex-shrink-0">
-            <div class="p-4 border-b border-[var(--efb-border)]">
-                <h1 class="text-xl font-bold text-[var(--efb-accent)]">FCOM AI</h1>
-                <p class="text-xs text-[var(--efb-text-dim)]">Flight Manual Assistant</p>
-            </div>
-            <div class="p-4 border-b border-[var(--efb-border)]">
-                <label class="block text-xs text-[var(--efb-text-dim)] mb-2">AIRCRAFT</label>
-                <select id="aircraft-select" class="w-full efb-input px-3 py-2 rounded">
-                    <option value="B777">Boeing 777</option>
-                    <option value="A320">Airbus A320</option>
-                    <option value="B737">Boeing 737</option>
-                </select>
-            </div>
-            <div class="p-4 border-b border-[var(--efb-border)]">
-                <label class="block text-xs text-[var(--efb-text-dim)] mb-2">MANUAL</label>
-                <select id="manual-select" class="w-full efb-input px-3 py-2 rounded">
-                    <option value="FCOM">FCOM</option>
-                    <option value="FCTM">FCTM</option>
-                    <option value="QRH">QRH</option>
-                </select>
-            </div>
-            <div class="p-4 border-b border-[var(--efb-border)]">
-                <div class="flex items-center gap-2">
-                    <div id="status-indicator" class="w-3 h-3 rounded-full bg-[var(--efb-warning)] status-indicator"></div>
-                    <span id="status-text" class="text-xs text-[var(--efb-text-dim)]">Loading...</span>
+<body class="h-screen flex flex-col">
+
+    <header class="h-16 border-b border-custom flex items-center justify-between px-6 shrink-0 bg-chat">
+        <div class="flex items-center gap-3">
+            <h1 class="text-xl font-bold tracking-tight">AI Knowledge Assistant</h1>
+            <span id="kb-badge" class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100 hidden">KB Active</span>
+        </div>
+        <div class="flex items-center gap-4">
+            <span id="auth-status" class="text-sm text-gray-500 font-medium">Connecting...</span>
+            <button onclick="toggleKbManager(true)" class="p-2 text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg transition">
+                Manage Documents
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-1 overflow-y-auto bg-chat scrollbar-hide" id="chat-container">
+        <div class="msg-container max-w-4xl mx-auto" id="chat-box">
+            <div id="welcome-msg" class="flex flex-col items-center justify-center py-20 opacity-80 text-center">
+                <div class="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mb-4">
+                    <svg class="w-8 h-8 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
                 </div>
-                <div class="mt-2 text-xs text-[var(--efb-text-dim)]">Chunks: <span id="chunk-count">0</span></div>
+                <h2 class="text-2xl font-bold mb-2">How can I help you today?</h2>
+                <p class="text-[var(--text-muted)] max-w-md">I am an AI assistant grounded in your uploaded documents. Ask me anything, and I will explain it naturally based on your knowledge base.</p>
             </div>
-            
-            <div class="p-4 border-b border-[var(--efb-border)]">
-                <button id="new-chat-btn" class="w-full efb-btn px-3 py-2 rounded text-sm mb-2">+ New Chat</button>
-                <button id="debug-btn" class="w-full efb-btn px-3 py-2 rounded text-sm text-xs mb-2">Debug: Show Chunks</button>
-                <button id="reprocess-btn" class="w-full efb-btn px-3 py-2 rounded text-xs text-[var(--efb-warning)]">⚠️ Re-process PDF</button>
-            </div>
-            
-            <div class="mt-auto p-4">
-                <button id="admin-toggle-btn" class="hidden w-full efb-btn px-3 py-2 rounded text-sm">Admin Panel</button>
-            </div>
-            <div class="p-4 border-t border-[var(--efb-border)]">
-                <p class="text-xs text-[var(--efb-text-dim)]">User:</p>
-                <p id="user-name" class="text-sm truncate">...</p>
-            </div>
-        </aside>
-        
-        <!-- Main Chat Area -->
-        <main class="flex-1 flex flex-col efb-panel">
-            <div class="chat-container">
-                <!-- Chat Messages -->
-                <div id="chat-messages" class="chat-messages scrollbar-efb">
-                    <div class="text-center text-[var(--efb-text-dim)] py-20">
-                        <p class="text-4xl mb-4">✈️</p>
-                        <h2 class="text-xl font-bold mb-2">FCOM Knowledge Base</h2>
-                        <p class="text-sm">Ask me anything about flight operations, procedures, limitations, and systems.</p>
-                        <p class="text-xs mt-4 text-[var(--efb-text-dim)]">Powered by your uploaded manuals</p>
-                    </div>
-                </div>
-                
-                <!-- Chat Input -->
-                <div class="chat-input-area">
-                    <div class="flex gap-3">
-                        <input type="text" id="chat-input" class="flex-1 efb-input px-4 py-3 rounded-lg" placeholder="Ask about FCOM procedures, limitations, systems..." />
-                        <button id="send-btn" class="efb-btn-primary px-6 py-3 rounded-lg">Send</button>
-                    </div>
-                    <p class="text-xs text-[var(--efb-text-dim)] mt-2">Press Enter to send. Type "show source" to see original text.</p>
-                </div>
-            </div>
-        </main>
+        </div>
+    </main>
+
+    <div class="p-4 bg-chat border-t border-custom shrink-0">
+        <div class="max-w-4xl mx-auto relative input-box rounded-2xl flex items-end shadow-sm">
+            <textarea id="chat-input" rows="1" class="w-full bg-transparent p-4 outline-none resize-none max-h-32 min-h-[56px]" placeholder="Ask a question about your documents..."></textarea>
+            <button id="send-btn" class="p-3 m-1 rounded-xl bg-[var(--accent)] text-white hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+            </button>
+        </div>
+        <p class="text-center text-xs text-[var(--text-muted)] mt-2">AI can make mistakes. Check important information.</p>
     </div>
-    
-    <!-- Admin Panel -->
-    <div id="admin-panel" class="admin-panel fixed inset-0 bg-black/80 z-50 items-center justify-center">
-        <div class="efb-panel w-full max-w-4xl max-h-[90vh] overflow-y-auto scrollbar-efb rounded-lg m-4">
-            <div class="p-6 border-b border-[var(--efb-border)] flex justify-between items-center">
-                <h2 class="text-xl font-bold text-[var(--efb-accent)]">Admin Dashboard</h2>
-                <button id="close-admin" class="efb-btn px-4 py-2 rounded">Close</button>
+
+    <div id="kb-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-[var(--bg-main)] w-full max-w-2xl rounded-2xl shadow-2xl border border-custom overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="p-6 border-b border-custom flex justify-between items-center">
+                <div>
+                    <h2 class="text-xl font-bold">Knowledge Base</h2>
+                    <p class="text-sm text-[var(--text-muted)]">Upload PDFs for the AI to learn from.</p>
+                </div>
+                <button onclick="toggleKbManager(false)" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">✕</button>
             </div>
-            <div class="p-6">
-                <div class="mb-6">
-                    <h3 class="section-header">PDF Upload & Processing</h3>
-                    <div class="grid grid-cols-2 gap-4 mb-4">
-                        <div>
-                            <label class="block text-xs text-[var(--efb-text-dim)] mb-2">Aircraft</label>
-                            <select id="upload-aircraft" class="w-full efb-input px-3 py-2 rounded">
-                                <option value="B777">Boeing 777</option>
-                                <option value="A320">Airbus A320</option>
-                                <option value="B737">Boeing 737</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs text-[var(--efb-text-dim)] mb-2">Manual</label>
-                            <select id="upload-manual" class="w-full efb-input px-3 py-2 rounded">
-                                <option value="FCOM">FCOM</option>
-                                <option value="FCTM">FCTM</option>
-                                <option value="QRH">QRH</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-xs text-[var(--efb-text-dim)] mb-2">PDF File</label>
-                        <input type="file" id="pdf-file-input" accept=".pdf" class="w-full efb-input px-3 py-2 rounded" />
-                    </div>
-                    <button id="process-pdf-btn" class="efb-btn-primary px-6 py-3 rounded w-full">PROCESS PDF</button>
+            
+            <div class="p-6 overflow-y-auto space-y-6">
+                <div class="border-2 border-dashed border-custom rounded-xl p-8 text-center hover:border-[var(--accent)] transition">
+                    <input type="text" id="doc-name" placeholder="Document Name (e.g., Boeing 777 FCOM)" class="w-full p-2 mb-4 border border-custom rounded bg-transparent outline-none focus:border-[var(--accent)] text-sm">
+                    <input type="file" id="pdf-upload" accept=".pdf" class="hidden">
+                    <button onclick="document.getElementById('pdf-upload').click()" class="px-4 py-2 bg-[var(--ai-bubble)] border border-custom rounded-lg font-medium shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition mb-2">
+                        Select PDF File
+                    </button>
+                    <p id="file-name-display" class="text-xs text-[var(--text-muted)]">No file selected</p>
+                    
+                    <button id="process-btn" class="w-full mt-4 py-3 bg-[var(--accent)] text-white font-bold rounded-lg disabled:opacity-50 hidden">
+                        Process & Learn Document
+                    </button>
                 </div>
                 
-                <div id="processing-status" class="hidden mb-6">
-                    <h3 class="section-header">Processing Status</h3>
-                    <div class="bg-[#1a1a1a] p-4 rounded">
-                        <div class="flex items-center gap-2 mb-2">
-                            <div id="process-spinner" class="w-4 h-4 border-2 border-[var(--efb-accent)] border-t-transparent rounded-full animate-spin"></div>
-                            <span id="process-status-text">Processing...</span>
-                        </div>
-                        <div class="w-full bg-[var(--efb-border)] rounded h-2">
-                            <div id="process-progress" class="bg-[var(--efb-accent)] h-2 rounded" style="width: 0%"></div>
-                        </div>
-                    </div>
+                <div id="ingest-log" class="bg-gray-900 text-green-400 font-mono text-xs p-4 rounded-xl h-32 overflow-y-auto hidden">
+                    > System ready...
                 </div>
-                
-                <div class="mb-6">
-                    <h3 class="section-header">Database Contents</h3>
-                    <div id="db-contents" class="bg-[#1a1a1a] p-4 rounded max-h-60 overflow-y-auto scrollbar-efb">
-                        <p class="text-[var(--efb-text-dim)]">Loading...</p>
+
+                <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl flex justify-between items-center border border-blue-100 dark:border-blue-900">
+                    <div>
+                        <h3 class="font-bold text-blue-800 dark:text-blue-300">Database Status</h3>
+                        <p class="text-sm text-blue-600 dark:text-blue-400">Total Indexed Chunks: <span id="total-chunks">0</span></p>
                     </div>
-                </div>
-                
-                <div class="flex gap-4">
-                    <button id="refresh-db-btn" class="efb-btn px-4 py-2 rounded flex-1">Refresh</button>
-                    <button id="clear-db-btn" class="efb-btn px-4 py-2 rounded flex-1 text-[var(--efb-danger)]">Clear Database</button>
+                    <button onclick="clearDatabase()" class="text-red-500 hover:text-red-700 text-sm font-medium px-3 py-1 border border-red-200 dark:border-red-900 rounded-md">
+                        Wipe Database
+                    </button>
                 </div>
             </div>
         </div>
@@ -202,668 +148,729 @@
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
         
-        const ADMIN_USERNAME = 'cool_ball_2253';
-        const MAX_CHUNK_SIZE = 35000;
-        const INDEX_KEY = 'fcom_index';
-        const CHUNK_PREFIX = 'fcom_';
+        const KB_MANIFEST_KEY = 'global_kb_manifest';
+        let kbManifest = { shards: 0, totalChunks: 0 };
+        let currentKbChunks = []; // Loaded into memory
+        let chatHistory = [];
         
-        let isAdmin = false;
-        let currentUser = null;
-        let conversationHistory = [];
-        let lastChunks = [];
-        
-        // Initialize
-        document.addEventListener('DOMContentLoaded', async () => {
+        // --- Initialization ---
+        window.onload = async () => {
             try {
-                currentUser = await puter.auth.getUser();
-                document.getElementById('user-name').textContent = currentUser?.username || 'Guest';
-                isAdmin = currentUser?.username === ADMIN_USERNAME;
-                if (isAdmin) document.getElementById('admin-toggle-btn').classList.remove('hidden');
-                await loadDbStats();
-                updateStatus('ready', 'Ready');
+                const isSignedIn = puter.auth.isSignedIn();
+                if (!isSignedIn) await puter.auth.signIn();
+                const user = await puter.auth.getUser();
+                document.getElementById('auth-status').textContent = user.username;
+                
+                await loadKnowledgeBase();
             } catch (e) {
-                console.error('Init error:', e);
-                updateStatus('ready', 'Ready (Guest)');
+                console.error("Auth error", e);
+                document.getElementById('auth-status').textContent = 'Guest Mode';
+                await loadKnowledgeBase(); // Try loading anyway
             }
-            setupEventListeners();
+            setupTextareaAutoResize();
+        };
+
+        function setupTextareaAutoResize() {
+            const tx = document.getElementById('chat-input');
+            tx.addEventListener("input", function() {
+                this.style.height = "auto";
+                this.style.height = (this.scrollHeight) + "px";
+            }, false);
+            tx.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleChatSubmit();
+                }
+            });
+            document.getElementById('send-btn').addEventListener('click', handleChatSubmit);
+        }
+
+        function toggleKbManager(show) {
+            document.getElementById('kb-modal').style.display = show ? 'flex' : 'none';
+        }
+
+        document.getElementById('pdf-upload').addEventListener('change', function(e) {
+            if (e.target.files[0]) {
+                document.getElementById('file-name-display').textContent = e.target.files[0].name;
+                document.getElementById('process-btn').classList.remove('hidden');
+                document.getElementById('process-btn').disabled = false;
+            }
         });
-        
-        function setupEventListeners() {
-            document.getElementById('send-btn').addEventListener('click', sendMessage);
-            document.getElementById('chat-input').addEventListener('keypress', e => { if (e.key === 'Enter') sendMessage(); });
-            document.getElementById('new-chat-btn').addEventListener('click', clearChat);
-            document.getElementById('debug-btn').addEventListener('click', debugShowAllChunks);
-            document.getElementById('reprocess-btn').addEventListener('click', () => {
-                document.getElementById('admin-panel').classList.add('visible');
-                loadDbContents();
-                alert('Please clear the database and re-upload the PDF with the improved text extraction.');
-            });
-            
-            document.getElementById('admin-toggle-btn').addEventListener('click', () => {
-                document.getElementById('admin-panel').classList.add('visible');
-                loadDbContents();
-            });
-            document.getElementById('close-admin').addEventListener('click', () => {
-                document.getElementById('admin-panel').classList.remove('visible');
-            });
-            
-            document.getElementById('process-pdf-btn').addEventListener('click', processPdf);
-            document.getElementById('refresh-db-btn').addEventListener('click', loadDbContents);
-            document.getElementById('clear-db-btn').addEventListener('click', clearDatabase);
-        }
-        
-        async function debugShowAllChunks() {
-            const messagesEl = document.getElementById('chat-messages');
-            const aircraft = document.getElementById('aircraft-select').value;
-            const manual = document.getElementById('manual-select').value;
-            
-            if (messagesEl.querySelector('.text-center')) {
-                messagesEl.innerHTML = '';
-            }
-            
-            messagesEl.innerHTML += `<div class="message message-user">Debug: Search for '270 knots' in all chunks</div>`;
-            
-            const indexData = await puter.kv.get(INDEX_KEY);
-            const index = indexData ? JSON.parse(indexData) : {};
-            
-            let docId = null;
-            for (const id in index) {
-                if (index[id].aircraft === aircraft && index[id].manual === manual) {
-                    docId = id;
-                    break;
-                }
-            }
-            
-            if (!docId) return;
-            
-            const chunkKeys = index[docId].chunks || [];
-            
-            // Search for "270" in all chunks
-            let found270 = [];
-            for (let i = 0; i < chunkKeys.length; i++) {
-                const chunkData = await puter.kv.get(chunkKeys[i]);
-                if (chunkData) {
-                    const chunk = JSON.parse(chunkData);
-                    if (chunk.text.includes('270')) {
-                        found270.push({
-                            chunkNum: i + 1,
-                            startPage: chunk.startPage,
-                            endPage: chunk.endPage || chunk.startPage,
-                            text: chunk.text
-                        });
-                    }
-                }
-            }
-            
-            messagesEl.innerHTML += `<div class="message message-assistant"><p>Found '270' in ${found270.length} chunks:</p></div>`;
-            
-            for (const f of found270) {
-                // Find context around 270
-                const idx = f.text.indexOf('270');
-                const context = f.text.slice(Math.max(0, idx - 100), idx + 200);
-                
-                messagesEl.innerHTML += `
-                    <div class="message message-assistant">
-                        <strong>Chunk ${f.chunkNum}: Pages ${f.startPage}-${f.endPage}</strong>
-                        <div class="text-xs text-[var(--efb-text-dim)] mt-1 font-mono">...${escapeHtml(context)}...</div>
-                    </div>`;
-            }
-            
-            // Also show search scores for "turbulence penetration speed"
-            messagesEl.innerHTML += `<div class="message message-assistant"><strong>Search scores for 'turbulence penetration speed':</strong></div>`;
-            
-            const termWeights = { 'turbulent': 10, 'turbulence': 10, 'penetration': 10, 'speed': 3, '270': 20, 'knots': 5 };
-            let scores = [];
-            
-            for (let i = 0; i < chunkKeys.length; i++) {
-                const chunkData = await puter.kv.get(chunkKeys[i]);
-                if (chunkData) {
-                    const chunk = JSON.parse(chunkData);
-                    const text = chunk.text.toLowerCase();
-                    let score = 0;
-                    let details = [];
+
+        // --- RAG Engine: Data Loader ---
+        async function loadKnowledgeBase() {
+            try {
+                const data = await puter.kv.get(KB_MANIFEST_KEY);
+                if (data) {
+                    kbManifest = JSON.parse(data);
+                    currentKbChunks = [];
                     
-                    for (const [term, weight] of Object.entries(termWeights)) {
-                        const count = (text.match(new RegExp(term, 'gi')) || []).length;
-                        if (count > 0) {
-                            score += count * weight;
-                            details.push(`${term}(${count})`);
+                    // Load all shards into memory for fast searching
+                    for (let i = 0; i < kbManifest.shards; i++) {
+                        const shardData = await puter.kv.get(`kb_shard_${i}`);
+                        if (shardData) {
+                            currentKbChunks.push(...JSON.parse(shardData).chunks);
                         }
                     }
                     
-                    if (score > 0) {
-                        scores.push({ chunkNum: i + 1, startPage: chunk.startPage, endPage: chunk.endPage || chunk.startPage, score, details });
+                    document.getElementById('total-chunks').textContent = kbManifest.totalChunks;
+                    if (kbManifest.totalChunks > 0) {
+                        document.getElementById('kb-badge').classList.remove('hidden');
                     }
                 }
-            }
-            
-            // Sort by score and show top 10
-            scores.sort((a, b) => b.score - a.score);
-            for (const s of scores.slice(0, 10)) {
-                messagesEl.innerHTML += `<div class="message message-assistant">
-                    <strong>Chunk ${s.chunkNum} (Pages ${s.startPage}-${s.endPage}): score=${s.score}</strong>
-                    <span class="text-xs text-[var(--efb-text-dim)]">${s.details.join(', ')}</span>
-                </div>`;
-            }
+            } catch (e) { console.error("Error loading KB", e); }
         }
-        
-        async function loadDbStats() {
-            try {
-                const indexData = await puter.kv.get(INDEX_KEY);
-                const index = indexData ? JSON.parse(indexData) : {};
-                let total = 0;
-                for (const k in index) total += index[k].chunks?.length || 0;
-                document.getElementById('chunk-count').textContent = total;
-            } catch (e) { console.error('Stats error:', e); }
-        }
-        
-        async function loadDbContents() {
-            const el = document.getElementById('db-contents');
-            try {
-                const indexData = await puter.kv.get(INDEX_KEY);
-                const index = indexData ? JSON.parse(indexData) : {};
-                let html = '';
-                for (const [k, m] of Object.entries(index)) {
-                    html += `<div class="mb-2"><strong class="text-[var(--efb-accent)]">${m.aircraft} - ${m.manual}</strong>
-                        <div class="text-sm text-[var(--efb-text-dim)]">${m.chunks?.length || 0} chunks, ${m.totalPages || '?'} pages</div></div>`;
-                }
-                el.innerHTML = html || '<p class="text-[var(--efb-text-dim)]">No documents indexed</p>';
-            } catch (e) { el.innerHTML = `<p class="text-[var(--efb-danger)]">Error: ${e.message}</p>`; }
-        }
-        
-        function clearChat() {
-            conversationHistory = [];
-            lastChunks = [];
-            const messagesEl = document.getElementById('chat-messages');
-            messagesEl.innerHTML = `
-                <div class="text-center text-[var(--efb-text-dim)] py-20">
-                    <p class="text-4xl mb-4">✈️</p>
-                    <h2 class="text-xl font-bold mb-2">FCOM Knowledge Base</h2>
-                    <p class="text-sm">Ask me anything about flight operations, procedures, limitations, and systems.</p>
-                    <p class="text-xs mt-4 text-[var(--efb-text-dim)]">Powered by your uploaded manuals</p>
-                </div>`;
-        }
-        
-        async function sendMessage() {
-            const input = document.getElementById('chat-input');
-            const query = input.value.trim();
+
+        // --- Core Chatbot Engine ---
+        async function handleChatSubmit() {
+            const inputEl = document.getElementById('chat-input');
+            const query = inputEl.value.trim();
             if (!query) return;
-            
-            input.value = '';
-            const messagesEl = document.getElementById('chat-messages');
-            
-            // Remove welcome message if present
-            if (messagesEl.querySelector('.text-center')) {
-                messagesEl.innerHTML = '';
-            }
-            
-            // Add user message
-            messagesEl.innerHTML += `<div class="message message-user">${escapeHtml(query)}</div>`;
-            messagesEl.scrollTop = messagesEl.scrollHeight;
-            
-            // Add typing indicator
-            const typingId = 'typing-' + Date.now();
-            messagesEl.innerHTML += `<div id="${typingId}" class="message"><div class="typing-indicator"><span></span><span></span><span></span></div></div>`;
-            messagesEl.scrollTop = messagesEl.scrollHeight;
-            
+
+            inputEl.value = '';
+            inputEl.style.height = 'auto'; // reset height
+            document.getElementById('welcome-msg').style.display = 'none';
+
+            // 1. Render User Message
+            renderMessage('user', query);
+            const loadingId = renderMessage('ai', `<div class="loader"><span></span><span></span><span></span></div>`);
+            toggleInput(false);
+
             try {
-                const aircraft = document.getElementById('aircraft-select').value;
-                const manual = document.getElementById('manual-select').value;
-                
-                // Check if user wants to see source
-                const showSourceCmd = query.toLowerCase().match(/show (source|original|text|page)/);
-                
-                if (showSourceCmd && lastChunks.length > 0) {
-                    // Show source directly
-                    removeTyping(typingId);
-                    displaySourceChunks(lastChunks, messagesEl);
-                } else {
-                    // Normal query - search and respond
-                    const chunks = await searchDatabase(query, aircraft, manual);
-                    
-                    if (chunks.length === 0) {
-                        removeTyping(typingId);
-                        messagesEl.innerHTML += `<div class="message message-assistant"><p>No relevant information found in ${aircraft} ${manual}. Make sure the manual is uploaded.</p></div>`;
-                    } else {
-                        lastChunks = chunks;
-                        
-                        // Add to conversation history
-                        conversationHistory.push({ role: 'user', content: query });
-                        
-                        // Query AI
-                        const response = await queryAI(query, chunks, conversationHistory);
-                        conversationHistory.push({ role: 'assistant', content: response });
-                        
-                        removeTyping(typingId);
-                        
-                        // Add response with citations
-                        let responseHtml = formatResponse(response, chunks);
-                        messagesEl.innerHTML += `<div class="message message-assistant">${responseHtml}</div>`;
-                    }
-                }
-            } catch (e) {
-                console.error('Send error:', e);
-                removeTyping(typingId);
-                messagesEl.innerHTML += `<div class="message message-assistant"><p class="text-[var(--efb-danger)]">Error: ${e.message}</p></div>`;
-            }
-            
-            messagesEl.scrollTop = messagesEl.scrollHeight;
-        }
-        
-        function displaySourceChunks(chunks, messagesEl) {
-            let html = `<div class="message message-assistant"><strong class="text-[var(--efb-accent)]">Source Text from Manual:</strong>`;
-            
-            for (const chunk of chunks) {
-                html += `
-                    <div class="mt-4 p-3 bg-[#0a0a0a] rounded border border-[var(--efb-border)]">
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="text-[var(--efb-accent)] font-bold">Pages ${chunk.startPage}-${chunk.endPage || chunk.startPage}</span>
-                        </div>
-                        <div class="text-sm text-[var(--efb-text-dim)] font-mono whitespace-pre-wrap">${escapeHtml(chunk.text.slice(0, 2000))}${chunk.text.length > 2000 ? '...' : ''}</div>
-                    </div>`;
-            }
-            
-            html += '</div>';
-            messagesEl.innerHTML += html;
-        }
-        
-        function removeTyping(id) {
-            const el = document.getElementById(id);
-            if (el) el.remove();
-        }
-        
-        async function searchDatabase(query, aircraft, manual) {
-            const indexData = await puter.kv.get(INDEX_KEY);
-            const index = indexData ? JSON.parse(indexData) : {};
-            
-            let docId = null;
-            for (const id in index) {
-                if (index[id].aircraft === aircraft && index[id].manual === manual) {
-                    docId = id;
-                    break;
-                }
-            }
-            if (!docId) return [];
-            
-            const chunkKeys = index[docId].chunks || [];
-            const queryLower = query.toLowerCase();
-            
-            // Define search terms based on query - with VERY high weights for specific numbers
-            const termWeights = {
-                'turbulent': 10,
-                'turbulence': 10,
-                'penetration': 10,
-                'penetrat': 8,
-                'speed': 2,
-                'severe': 5,
-                '270': 50,  // Very high weight for the actual speed value
-                '280': 30,
-                '0.82': 30,
-                'mach': 5,
-                'knots': 5,
-                'kias': 5
-            };
-            
-            // Get words from query
-            const queryWords = queryLower.split(/\s+/).filter(w => w.length > 2);
-            
-            const scored = [];
-            
-            // Load ALL chunks and score them
-            for (let i = 0; i < chunkKeys.length; i++) {
-                const chunkData = await puter.kv.get(chunkKeys[i]);
-                if (!chunkData) continue;
-                
-                const chunk = JSON.parse(chunkData);
-                const text = chunk.text.toLowerCase();
-                
-                let score = 0;
-                let matchDetails = [];
-                
-                // Check each term
-                for (const [term, weight] of Object.entries(termWeights)) {
-                    if (queryLower.includes(term) || queryLower.includes('turb') || queryLower.includes('speed') || queryLower.includes('penetrat')) {
-                        const count = (text.match(new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi')) || []).length;
-                        if (count > 0) {
-                            score += count * weight;
-                            matchDetails.push(`${term}(${count})`);
-                        }
-                    }
-                }
-                
-                if (score > 0) {
-                    scored.push({ 
-                        ...chunk, 
-                        score, 
-                        chunkKey: chunkKeys[i],
-                        matchDetails: matchDetails.join(', ')
-                    });
-                }
-            }
-            
-            // Sort by score descending
-            scored.sort((a, b) => b.score - a.score);
-            
-            console.log('Search results for:', queryLower);
-            scored.slice(0, 5).forEach(s => {
-                console.log(`  Page ${s.startPage}-${s.endPage || s.startPage}: score=${s.score}, matches=${s.matchDetails}`);
-            });
-            
-            return scored.slice(0, 10);
-        }
-        
-        async function queryAI(query, chunks, history) {
-            // Build strict context from PDF chunks
-            const contextParts = chunks.map((c, i) => 
-                `[Page ${c.startPage}${c.endPage && c.endPage !== c.startPage ? '-' + c.endPage : ''}]:\n${c.text.slice(0, 4000)}`
-            );
-            const contextText = contextParts.join('\n\n---\n\n');
-            
-            const systemPrompt = `You are an FCOM search assistant. Your ONLY job is to answer questions using the provided PDF text.
+                let contextText = "";
 
-CRITICAL RULES:
-1. ONLY use information from the provided context. If it's not in the context, say "I don't have that information in the manual."
-2. Quote directly from the text when possible. Use exact phrases.
-3. Always cite the page number when providing information.
-4. Do NOT use outside knowledge or general aviation knowledge.
-5. If asked to show source/original text, provide the exact text from context.
+                // 2. RAG Search (Only if KB has data)
+                if (currentKbChunks.length > 0) {
+                    // Step A: Hidden AI call to understand intent and extract search terms
+                    const intentPrompt = `Given this user question: "${query}"\nExtract 5-7 highly specific keywords or technical terms that would be best to search a PDF database. Return ONLY the words separated by spaces. No explanation.`;
+                    const searchTermsStr = await puter.ai.chat(intentPrompt);
+                    const searchTerms = (typeof searchTermsStr === 'string' ? searchTermsStr : searchTermsStr?.message?.content || query)
+                                        .toLowerCase().replace(/[^\w\s]/g, '').split(' ');
 
-Provided text from the PDF:
-${contextText}
-
-Remember: If the answer is not in the text above, say so. Do not make things up.`;
-
-            // Build messages for AI
-            const messages = [{ role: 'system', content: systemPrompt }];
-            
-            // Add conversation history (last 10 messages)
-            for (const msg of history.slice(-10)) {
-                messages.push({ role: msg.role, content: msg.content });
-            }
-            
-            console.log('Sending to AI:', chunks.length, 'chunks, first chunk pages:', chunks[0]?.startPage, '-', chunks[0]?.endPage);
-            console.log('First chunk preview:', chunks[0]?.text?.slice(0, 200));
-            
-            try {
-                // Use Puter AI with full conversation
-                let response = await puter.ai.chat(messages, { 
-                    model: 'claude-sonnet'
-                });
-                
-                // Handle Puter's response format (array of content blocks)
-                if (Array.isArray(response)) {
-                    // Extract text from content blocks
-                    return response
-                        .filter(block => block.type === 'text')
-                        .map(block => block.text)
-                        .join('\n\n');
-                }
-                
-                // Handle different response formats from Puter
-                if (typeof response === 'string') return response;
-                if (response?.message?.content) return response.message.content;
-                if (response?.content) return response.content;
-                if (response?.text) return response.text;
-                if (response?.response) return response.response;
-                
-                // If all else fails, stringify
-                console.log('Raw AI response:', response);
-                return JSON.stringify(response);
-            } catch (e) {
-                console.error('AI Error:', e);
-                throw new Error(`AI request failed: ${e.message || 'Unknown error'}`);
-            }
-        }
-        
-        function formatResponse(text, chunks) {
-            // Ensure text is a string
-            if (Array.isArray(text)) {
-                // Handle Puter's array format
-                text = text
-                    .filter(block => block.type === 'text')
-                    .map(block => block.text)
-                    .join('\n\n');
-            }
-            if (typeof text !== 'object') {
-                text = String(text);
-            } else {
-                text = JSON.stringify(text);
-            }
-            
-            // Format markdown-like syntax
-            let html = text
-                // Escape HTML first
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                // Headers
-                .replace(/^### (.*$)/gm, '<h4 class="text-[var(--efb-accent)] font-bold mt-4 mb-2">$1</h4>')
-                .replace(/^## (.*$)/gm, '<h3 class="text-[var(--efb-accent)] font-bold text-lg mt-4 mb-2">$1</h3>')
-                .replace(/^# (.*$)/gm, '<h2 class="text-[var(--efb-accent)] font-bold text-xl mt-2 mb-2">$1</h2>')
-                // Subscript (V~RA~)
-                .replace(/([A-Z])~([^~]+)~/g, '$1<sub>$2</sub>')
-                // Bold and italic
-                .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-                .replace(/\*([^*]+)\*/g, '<em>$1</em>')
-                // Code blocks
-                .replace(/```([\s\S]*?)```/g, '<code class="block bg-[#0a0a0a] p-2 rounded my-2">$1</code>')
-                .replace(/`([^`]+)`/g, '<code class="bg-[#0a0a0a] px-1 rounded">$1</code>')
-                // Lists
-                .replace(/^[-•]\s+(.+)/gm, '<li>$1</li>')
-                .replace(/(<li>.*<\/li>\n?)+/g, '<ul class="list-disc list-inside my-2 pl-2">$&</ul>')
-                .replace(/^\d+\.\s+(.+)/gm, '<li>$1</li>')
-                // Blockquotes (already escaped, so handle after)
-                .replace(/^⚠️ /gm, '⚠️ ')
-                // Horizontal rules
-                .replace(/^---$/gm, '<hr class="border-[var(--efb-border)] my-3">')
-                // Paragraphs (must be last)
-                .replace(/\n\n/g, '</p><p class="my-2">')
-                .replace(/^/, '<p class="my-2">')
-                .replace(/$/, '</p>');
-            
-            // Add citation chips
-            const pageRanges = [...new Set(chunks.map(c => `${c.startPage}-${c.endPage || c.startPage}`))];
-            const citations = pageRanges.map(p => 
-                `<span class="citation-chip" onclick="showSource('${p}')">📄 Page ${p}</span>`
-            ).join('');
-            
-            return html + `<div class="mt-3">${citations}</div>`;
-        }
-        
-        async function showSource(pageRange) {
-            const [start, end] = pageRange.split('-').map(Number);
-            const chunk = lastChunks.find(c => c.startPage === start);
-            
-            if (chunk) {
-                const sourcePanel = document.createElement('div');
-                sourcePanel.className = 'source-panel visible';
-                sourcePanel.innerHTML = `
-                    <div class="flex justify-between items-center mb-2">
-                        <strong class="text-[var(--efb-accent)]">Original Text (Pages ${pageRange})</strong>
-                        <button onclick="this.parentElement.parentElement.remove()" class="text-[var(--efb-text-dim)] hover:text-[var(--efb-text)]">✕</button>
-                    </div>
-                    <div class="source-text">${escapeHtml(chunk.text)}</div>
-                `;
-                
-                const lastMessage = document.querySelector('.message-assistant:last-child');
-                if (lastMessage) {
-                    const existing = lastMessage.querySelector('.source-panel');
-                    if (existing) existing.remove();
-                    lastMessage.appendChild(sourcePanel);
-                }
-            }
-        }
-        
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-        
-        async function processPdf() {
-            const fileInput = document.getElementById('pdf-file-input');
-            const aircraft = document.getElementById('upload-aircraft').value;
-            const manual = document.getElementById('upload-manual').value;
-            if (!fileInput.files[0]) { alert('Please select a PDF file'); return; }
-            
-            const file = fileInput.files[0];
-            document.getElementById('processing-status').classList.remove('hidden');
-            updateProcessStatus('loading', 'Loading PDF...', 0);
-            
-            try {
-                const arrayBuffer = await file.arrayBuffer();
-                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-                const totalPages = pdf.numPages;
-                updateProcessStatus('loading', `PDF: ${totalPages} pages`, 5);
-                
-                const pages = [];
-                let totalText = 0;
-                
-                for (let i = 1; i <= totalPages; i++) {
-                    const page = await pdf.getPage(i);
-                    const textContent = await page.getTextContent();
-                    
-                    // Extract with position awareness
-                    const items = textContent.items.slice().sort((a, b) => {
-                        const yDiff = b.transform[5] - a.transform[5];
-                        if (Math.abs(yDiff) > 5) return yDiff;
-                        return a.transform[4] - b.transform[4];
-                    });
-                    
-                    let pageText = '';
-                    let lastY = null;
-                    let lastStr = '';
-                    
-                    for (const item of items) {
-                        if (!item.str || !item.str.trim()) continue;
+                    // Step B: Score chunks based on expanded intent
+                    const scoredChunks = currentKbChunks.map(chunk => {
+                        let score = 0;
+                        const lowerText = chunk.text.toLowerCase();
+                        if (lowerText.includes(query.toLowerCase())) score += 100; // Exact phrase
                         
-                        const y = item.transform[5];
-                        if (lastY !== null && Math.abs(y - lastY) > 8) {
-                            pageText += '\n';
-                        } else if (pageText && !pageText.endsWith('\n') && !pageText.endsWith(' ')) {
-                            // Check if we need a space (not if last char was a letter/number and current starts with one)
-                            const lastChar = lastStr.slice(-1);
-                            const firstChar = item.str[0];
-                            if (/[a-zA-Z0-9]/.test(lastChar) && /[a-zA-Z0-9]/.test(firstChar)) {
-                                pageText += ' ';
+                        searchTerms.forEach(term => {
+                            if (term.length > 3 && lowerText.includes(term)) {
+                                score += (lowerText.split(term).length - 1);
                             }
-                        }
-                        
-                        pageText += item.str;
-                        lastY = y;
-                        lastStr = item.str;
-                    }
+                        });
+                        return { ...chunk, score };
+                    }).filter(c => c.score > 0);
+
+                    // Step C: Get top chunks and format context
+                    const topChunks = scoredChunks.sort((a, b) => b.score - a.score).slice(0, 8);
                     
-                    // Clean up text
-                    pageText = pageText
-                        .replace(/\s+/g, ' ')
-                        .replace(/\n\s*\n/g, '\n')
-                        .trim();
+                    if (topChunks.length > 0) {
+                        contextText = topChunks.map(c => `[Document: ${c.docName}, Page ${c.page}]\n${c.text}`).join('\n\n');
+                    }
+                }
+
+                // 3. Conversational AI Generation
+                chatHistory.push({ role: 'user', content: query });
+                
+                const systemInstructions = `You are a highly intelligent, natural-language AI assistant. Your primary job is to help the user understand concepts, answer questions, and provide guidance.
+                
+CRITICAL INSTRUCTIONS:
+1. You have been provided with context excerpts from the user's uploaded PDF documents below.
+2. Answer the user's question naturally and conversationally, strictly using the provided context.
+3. Act like an expert tutor. Break down complex procedures or limitations so they are easy to read. Use bullet points if helpful.
+4. If the context DOES NOT contain the answer, politely state: "I don't have information about that in the uploaded documents." DO NOT make up an answer using outside knowledge.
+5. If the user's question is vague, answer based on what you have, and ask a follow-up question to clarify their needs.
+6. Whenever you use a fact from the text, append a citation like [Page X] at the end of the sentence.
+
+--- BEGIN CONTEXT FROM DOCUMENTS ---
+${contextText || "No relevant documents found."}
+--- END CONTEXT ---`;
+
+                const messagesForAI = [{ role: 'system', content: systemInstructions }, ...chatHistory.slice(-5)];
+
+                const response = await puter.ai.chat(messagesForAI);
+                const responseText = typeof response === 'string' ? response : response?.message?.content || JSON.stringify(response);
+
+                chatHistory.push({ role: 'assistant', content: responseText });
+                
+                // 4. Render output
+                updateMessage(loadingId, parseMarkdown(responseText));
+
+            } catch (e) {
+                console.error("Chat Error:", e);
+                updateMessage(loadingId, `<p class="text-red-500">I encountered an error connecting to the AI engine. Please try again.</p>`);
+            } finally {
+                toggleInput(true);
+            }
+        }
+
+        // --- PDF Ingestion Engine ---
+        document.getElementById('process-btn').addEventListener('click', async () => {
+            const file = document.getElementById('pdf-upload').files[0];
+            const docNameInput = document.getElementById('doc-name').value.trim();
+            const docName = docNameInput || file.name.replace('.pdf', '');
+            
+            if (!file) return;
+
+            const logEl = document.getElementById('ingest-log');
+            const log = (msg) => { logEl.innerHTML += `<div>> ${msg}</div>`; logEl.scrollTop = logEl.scrollHeight; };
+            
+            logEl.classList.remove('hidden');
+            document.getElementById('process-btn').disabled = true;
+            log(`Starting processing: ${docName}`);
+
+            try {
+                const pdf = await pdfjsLib.getDocument({data: await file.arrayBuffer()}).promise;
+                log(`Loaded PDF. Pages: ${pdf.numPages}`);
+                
+                let newChunks = [];
+                // Chunking logic: Combine pages slightly to prevent cutting off sentences at page breaks
+                let bufferText = "";
+                let bufferStartPage = 1;
+
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const content = await page.getTextContent();
+                    const pageText = content.items.map(it => it.str).join(' ').replace(/\s+/g, ' ').trim();
                     
                     if (pageText.length > 20) {
-                        pages.push({ page: i, text: pageText });
-                        totalText += pageText.length;
+                        newChunks.push({
+                            docName: docName,
+                            page: i,
+                            text: pageText
+                        });
                     }
-                    
-                    if (i % 50 === 0 || i === totalPages) {
-                        updateProcessStatus('loading', `Extracting page ${i}/${totalPages}`, 5 + (i / totalPages) * 50);
-                    }
+                    if (i % 20 === 0) log(`Extracted Page ${i}/${pdf.numPages}...`);
+                }
+
+                log(`Extraction complete. Saving to database...`);
+
+                // Append to existing chunks
+                currentKbChunks.push(...newChunks);
+                kbManifest.totalChunks = currentKbChunks.length;
+                
+                // Save in chunks to Puter KV (Sharding)
+                const CHUNKS_PER_SHARD = 150;
+                let shardIndex = 0;
+                for (let i = 0; i < currentKbChunks.length; i += CHUNKS_PER_SHARD) {
+                    const shard = currentKbChunks.slice(i, i + CHUNKS_PER_SHARD);
+                    await puter.kv.set(`kb_shard_${shardIndex}`, JSON.stringify({ chunks: shard }));
+                    shardIndex++;
                 }
                 
-                // Verify we got meaningful text
-                const sampleText = pages.slice(0, 5).map(p => p.text).join(' ');
-                const hasLetters = /[a-zA-Z]{3,}/.test(sampleText);
+                kbManifest.shards = shardIndex;
+                await puter.kv.set(KB_MANIFEST_KEY, JSON.stringify(kbManifest));
+
+                log(`Successfully learned document!`);
+                document.getElementById('total-chunks').textContent = kbManifest.totalChunks;
+                document.getElementById('kb-badge').classList.remove('hidden');
                 
-                if (!hasLetters || totalText < 10000) {
-                    updateProcessStatus('error', 
-                        `PDF extraction may have failed. Got ${totalText} chars. ` +
-                        `If this is a scanned PDF, you may need OCR. ` +
-                        `Try a searchable PDF instead.`, 0);
-                    return;
-                }
-                
-                // Verify first and last pages
-                const firstPage = pages[0]?.page || 0;
-                const lastPage = pages[pages.length - 1]?.page || 0;
-                console.log(`PDF extracted: pages ${firstPage}-${lastPage}, ${pages.length} pages, ${totalText} total chars`);
-                
-                updateProcessStatus('loading', `Extracted pages ${firstPage}-${lastPage}. Chunking...`, 60);
-                
-                updateProcessStatus('loading', 'Chunking text...', 60);
-                const chunks = [];
-                let current = { pages: [], text: '', startPage: 1 };
-                
-                for (const p of pages) {
-                    if (current.text.length + p.text.length > MAX_CHUNK_SIZE && current.text.length > 0) {
-                        chunks.push({ ...current, endPage: current.pages[current.pages.length - 1] });
-                        current = { pages: [p.page], text: p.text, startPage: p.page };
-                    } else {
-                        current.pages.push(p.page);
-                        current.text += '\n' + p.text;
-                    }
-                }
-                if (current.text.length > 0) chunks.push({ ...current, endPage: current.pages[current.pages.length - 1] });
-                
-                updateProcessStatus('loading', `Saving ${chunks.length} chunks...`, 70);
-                
-                let indexData = await puter.kv.get(INDEX_KEY);
-                let index = indexData ? JSON.parse(indexData) : {};
-                
-                const docId = `${aircraft}_${manual}_${Date.now()}`;
-                const chunkKeys = [];
-                
-                for (let i = 0; i < chunks.length; i++) {
-                    const chunkKey = `${CHUNK_PREFIX}${docId}_${i}`;
-                    await puter.kv.set(chunkKey, JSON.stringify(chunks[i]));
-                    chunkKeys.push(chunkKey);
-                    updateProcessStatus('loading', `Saving chunk ${i + 1}/${chunks.length}`, 70 + (i / chunks.length) * 25);
-                }
-                
-                index[docId] = { aircraft, manual, chunks: chunkKeys, totalPages, createdAt: Date.now() };
-                await puter.kv.set(INDEX_KEY, JSON.stringify(index));
-                
-                updateProcessStatus('success', `Done! ${chunks.length} chunks saved.`, 100);
-                await loadDbStats();
-                await loadDbContents();
+                // Reset inputs
+                document.getElementById('pdf-upload').value = '';
+                document.getElementById('file-name-display').textContent = 'No file selected';
+                document.getElementById('doc-name').value = '';
+                document.getElementById('process-btn').classList.add('hidden');
+
             } catch (e) {
-                console.error('Process error:', e);
-                updateProcessStatus('error', `Error: ${e.message}`, 0);
+                log(`<span style="color: red;">Error: ${e.message}</span>`);
+            } finally {
+                document.getElementById('process-btn').disabled = false;
+            }
+        });
+
+        async function clearDatabase() {
+            if(!confirm("Are you sure you want to delete all learned documents?")) return;
+            try {
+                await puter.kv.del(KB_MANIFEST_KEY);
+                kbManifest = { shards: 0, totalChunks: 0 };
+                currentKbChunks = [];
+                document.getElementById('total-chunks').textContent = '0';
+                document.getElementById('kb-badge').classList.add('hidden');
+                document.getElementById('ingest-log').innerHTML = '> Database cleared.';
+            } catch (e) { alert("Error clearing DB: " + e.message); }
+        }
+
+        // --- UI Utilities ---
+        function renderMessage(role, content) {
+            const id = 'msg-' + Date.now();
+            const container = document.getElementById('chat-box');
+            
+            const wrapper = document.createElement('div');
+            wrapper.className = `msg-wrapper ${role}`;
+            
+            wrapper.innerHTML = `<div id="${id}" class="msg ${role}">${content}</div>`;
+            container.appendChild(wrapper);
+            
+            // Scroll to bottom
+            const chatMain = document.getElementById('chat-container');
+            chatMain.scrollTop = chatMain.scrollHeight;
+            
+            return id;
+        }
+
+        function updateMessage(id, content) {
+            const el = document.getElementById(id);
+            if (el) {
+                el.innerHTML = content;
+                const chatMain = document.getElementById('chat-container');
+                chatMain.scrollTop = chatMain.scrollHeight;
             }
         }
-        
-        function updateProcessStatus(type, text, progress) {
-            const spinner = document.getElementById('process-spinner');
-            const statusText = document.getElementById('process-status-text');
-            const progressBar = document.getElementById('process-progress');
-            statusText.textContent = text;
-            progressBar.style.width = progress + '%';
-            if (type === 'success') { spinner.classList.remove('animate-spin'); spinner.style.borderColor = 'var(--efb-success)'; }
-            if (type === 'error') { spinner.classList.remove('animate-spin'); spinner.style.borderColor = 'var(--efb-danger)'; }
+
+        function toggleInput(enabled) {
+            document.getElementById('chat-input').disabled = !enabled;
+            document.getElementById('send-btn').disabled = !enabled;
+            if (enabled) document.getElementById('chat-input').focus();
         }
+
+        function parseMarkdown(text) {
+            let html = text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/\[Page (\d+)\]/g, '<span class="citation">Page $1</span>')
+                .replace(/\n\n/g, '</p><p>')
+                .replace(/\n- (.*)/g, '<li>$1</li>');
+            
+            if (html.includes('<li>')) html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+            return `<p>${html}</p>`;
+        }
+    </script>
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Document Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://js.puter.com/v2/"></script>
+    
+    <style>
+        :root {
+            --bg-main: #ffffff;
+            --bg-chat: #f9fafb;
+            --border-color: #e5e7eb;
+            --text-main: #111827;
+            --text-muted: #6b7280;
+            --accent: #2563eb;
+            --user-bubble: #2563eb;
+            --ai-bubble: #ffffff;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-main: #0f172a;
+                --bg-chat: #1e293b;
+                --border-color: #334155;
+                --text-main: #f8fafc;
+                --text-muted: #94a3b8;
+                --accent: #3b82f6;
+                --user-bubble: #3b82f6;
+                --ai-bubble: #0f172a;
+            }
+        }
+
+        body { background: var(--bg-main); color: var(--text-main); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; overflow: hidden; }
+        .border-custom { border-color: var(--border-color); }
+        .bg-chat { background: var(--bg-chat); }
         
-        async function clearDatabase() {
-            if (!confirm('Clear entire database?')) return;
+        .msg-container { display: flex; flex-direction: column; gap: 1.5rem; padding: 1.5rem; }
+        .msg-wrapper { display: flex; width: 100%; }
+        .msg-wrapper.user { justify-content: flex-end; }
+        .msg-wrapper.ai { justify-content: flex-start; }
+        
+        .msg { max-width: 80%; padding: 1rem 1.25rem; border-radius: 1rem; line-height: 1.6; font-size: 1rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .msg.user { background: var(--user-bubble); color: #ffffff; border-bottom-right-radius: 0.25rem; }
+        .msg.ai { background: var(--ai-bubble); color: var(--text-main); border: 1px solid var(--border-color); border-bottom-left-radius: 0.25rem; }
+        
+        .msg.ai p { margin-bottom: 0.75rem; }
+        .msg.ai p:last-child { margin-bottom: 0; }
+        .msg.ai ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 0.75rem; }
+        .msg.ai li { margin-bottom: 0.25rem; }
+        .msg.ai strong { font-weight: 600; color: inherit; }
+        
+        .citation { font-size: 0.8em; background: rgba(148, 163, 184, 0.2); padding: 0.1rem 0.4rem; border-radius: 0.25rem; font-family: monospace; opacity: 0.8; margin-left: 0.25rem; }
+
+        .loader { display: inline-flex; gap: 4px; align-items: center; height: 24px; }
+        .loader span { width: 6px; height: 6px; background-color: var(--text-muted); border-radius: 50%; animation: bounce 1.4s infinite ease-in-out both; }
+        .loader span:nth-child(1) { animation-delay: -0.32s; }
+        .loader span:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .input-box { background: var(--ai-bubble); border: 1px solid var(--border-color); color: var(--text-main); transition: all 0.2s; }
+        .input-box:focus-within { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
+    </style>
+</head>
+<body class="h-screen flex flex-col">
+
+    <header class="h-16 border-b border-custom flex items-center justify-between px-6 shrink-0 bg-chat">
+        <div class="flex items-center gap-3">
+            <h1 class="text-xl font-bold tracking-tight">AI Knowledge Assistant</h1>
+            <span id="kb-badge" class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100 hidden">KB Active</span>
+        </div>
+        <div class="flex items-center gap-4">
+            <span id="auth-status" class="text-sm text-gray-500 font-medium">Connecting...</span>
+            <button onclick="toggleKbManager(true)" class="p-2 text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg transition">
+                Manage Documents
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-1 overflow-y-auto bg-chat scrollbar-hide" id="chat-container">
+        <div class="msg-container max-w-4xl mx-auto" id="chat-box">
+            <div id="welcome-msg" class="flex flex-col items-center justify-center py-20 opacity-80 text-center">
+                <div class="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mb-4">
+                    <svg class="w-8 h-8 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+                </div>
+                <h2 class="text-2xl font-bold mb-2">How can I help you today?</h2>
+                <p class="text-[var(--text-muted)] max-w-md">I am an AI assistant grounded in your uploaded documents. Ask me anything, and I will explain it naturally based on your knowledge base.</p>
+            </div>
+        </div>
+    </main>
+
+    <div class="p-4 bg-chat border-t border-custom shrink-0">
+        <div class="max-w-4xl mx-auto relative input-box rounded-2xl flex items-end shadow-sm">
+            <textarea id="chat-input" rows="1" class="w-full bg-transparent p-4 outline-none resize-none max-h-32 min-h-[56px]" placeholder="Ask a question about your documents..."></textarea>
+            <button id="send-btn" class="p-3 m-1 rounded-xl bg-[var(--accent)] text-white hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+            </button>
+        </div>
+        <p class="text-center text-xs text-[var(--text-muted)] mt-2">AI can make mistakes. Check important information.</p>
+    </div>
+
+    <div id="kb-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-[var(--bg-main)] w-full max-w-2xl rounded-2xl shadow-2xl border border-custom overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="p-6 border-b border-custom flex justify-between items-center">
+                <div>
+                    <h2 class="text-xl font-bold">Knowledge Base</h2>
+                    <p class="text-sm text-[var(--text-muted)]">Upload PDFs for the AI to learn from.</p>
+                </div>
+                <button onclick="toggleKbManager(false)" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">✕</button>
+            </div>
+            
+            <div class="p-6 overflow-y-auto space-y-6">
+                <div class="border-2 border-dashed border-custom rounded-xl p-8 text-center hover:border-[var(--accent)] transition">
+                    <input type="text" id="doc-name" placeholder="Document Name (e.g., Boeing 777 FCOM)" class="w-full p-2 mb-4 border border-custom rounded bg-transparent outline-none focus:border-[var(--accent)] text-sm">
+                    <input type="file" id="pdf-upload" accept=".pdf" class="hidden">
+                    <button onclick="document.getElementById('pdf-upload').click()" class="px-4 py-2 bg-[var(--ai-bubble)] border border-custom rounded-lg font-medium shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition mb-2">
+                        Select PDF File
+                    </button>
+                    <p id="file-name-display" class="text-xs text-[var(--text-muted)]">No file selected</p>
+                    
+                    <button id="process-btn" class="w-full mt-4 py-3 bg-[var(--accent)] text-white font-bold rounded-lg disabled:opacity-50 hidden">
+                        Process & Learn Document
+                    </button>
+                </div>
+                
+                <div id="ingest-log" class="bg-gray-900 text-green-400 font-mono text-xs p-4 rounded-xl h-32 overflow-y-auto hidden">
+                    > System ready...
+                </div>
+
+                <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl flex justify-between items-center border border-blue-100 dark:border-blue-900">
+                    <div>
+                        <h3 class="font-bold text-blue-800 dark:text-blue-300">Database Status</h3>
+                        <p class="text-sm text-blue-600 dark:text-blue-400">Total Indexed Chunks: <span id="total-chunks">0</span></p>
+                    </div>
+                    <button onclick="clearDatabase()" class="text-red-500 hover:text-red-700 text-sm font-medium px-3 py-1 border border-red-200 dark:border-red-900 rounded-md">
+                        Wipe Database
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        
+        const KB_MANIFEST_KEY = 'global_kb_manifest';
+        let kbManifest = { shards: 0, totalChunks: 0 };
+        let currentKbChunks = []; // Loaded into memory
+        let chatHistory = [];
+        
+        // --- Initialization ---
+        window.onload = async () => {
             try {
-                const indexData = await puter.kv.get(INDEX_KEY);
-                const index = indexData ? JSON.parse(indexData) : {};
-                for (const docId in index) {
-                    for (const chunkKey of index[docId].chunks || []) {
-                        await puter.kv.del(chunkKey);
+                const isSignedIn = puter.auth.isSignedIn();
+                if (!isSignedIn) await puter.auth.signIn();
+                const user = await puter.auth.getUser();
+                document.getElementById('auth-status').textContent = user.username;
+                
+                await loadKnowledgeBase();
+            } catch (e) {
+                console.error("Auth error", e);
+                document.getElementById('auth-status').textContent = 'Guest Mode';
+                await loadKnowledgeBase(); // Try loading anyway
+            }
+            setupTextareaAutoResize();
+        };
+
+        function setupTextareaAutoResize() {
+            const tx = document.getElementById('chat-input');
+            tx.addEventListener("input", function() {
+                this.style.height = "auto";
+                this.style.height = (this.scrollHeight) + "px";
+            }, false);
+            tx.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleChatSubmit();
+                }
+            });
+            document.getElementById('send-btn').addEventListener('click', handleChatSubmit);
+        }
+
+        function toggleKbManager(show) {
+            document.getElementById('kb-modal').style.display = show ? 'flex' : 'none';
+        }
+
+        document.getElementById('pdf-upload').addEventListener('change', function(e) {
+            if (e.target.files[0]) {
+                document.getElementById('file-name-display').textContent = e.target.files[0].name;
+                document.getElementById('process-btn').classList.remove('hidden');
+                document.getElementById('process-btn').disabled = false;
+            }
+        });
+
+        // --- RAG Engine: Data Loader ---
+        async function loadKnowledgeBase() {
+            try {
+                const data = await puter.kv.get(KB_MANIFEST_KEY);
+                if (data) {
+                    kbManifest = JSON.parse(data);
+                    currentKbChunks = [];
+                    
+                    // Load all shards into memory for fast searching
+                    for (let i = 0; i < kbManifest.shards; i++) {
+                        const shardData = await puter.kv.get(`kb_shard_${i}`);
+                        if (shardData) {
+                            currentKbChunks.push(...JSON.parse(shardData).chunks);
+                        }
+                    }
+                    
+                    document.getElementById('total-chunks').textContent = kbManifest.totalChunks;
+                    if (kbManifest.totalChunks > 0) {
+                        document.getElementById('kb-badge').classList.remove('hidden');
                     }
                 }
-                await puter.kv.del(INDEX_KEY);
-                await loadDbStats();
-                await loadDbContents();
-                alert('Database cleared');
-            } catch (e) { alert('Error: ' + e.message); }
+            } catch (e) { console.error("Error loading KB", e); }
         }
-        
-        function updateStatus(type, text) {
-            const indicator = document.getElementById('status-indicator');
-            const statusText = document.getElementById('status-text');
-            indicator.className = 'w-3 h-3 rounded-full status-indicator';
-            indicator.style.backgroundColor = type === 'ready' ? 'var(--efb-success)' : type === 'loading' ? 'var(--efb-warning)' : 'var(--efb-danger)';
-            statusText.textContent = text;
+
+        // --- Core Chatbot Engine ---
+        async function handleChatSubmit() {
+            const inputEl = document.getElementById('chat-input');
+            const query = inputEl.value.trim();
+            if (!query) return;
+
+            inputEl.value = '';
+            inputEl.style.height = 'auto'; // reset height
+            document.getElementById('welcome-msg').style.display = 'none';
+
+            // 1. Render User Message
+            renderMessage('user', query);
+            const loadingId = renderMessage('ai', `<div class="loader"><span></span><span></span><span></span></div>`);
+            toggleInput(false);
+
+            try {
+                let contextText = "";
+
+                // 2. RAG Search (Only if KB has data)
+                if (currentKbChunks.length > 0) {
+                    // Step A: Hidden AI call to understand intent and extract search terms
+                    const intentPrompt = `Given this user question: "${query}"\nExtract 5-7 highly specific keywords or technical terms that would be best to search a PDF database. Return ONLY the words separated by spaces. No explanation.`;
+                    const searchTermsStr = await puter.ai.chat(intentPrompt);
+                    const searchTerms = (typeof searchTermsStr === 'string' ? searchTermsStr : searchTermsStr?.message?.content || query)
+                                        .toLowerCase().replace(/[^\w\s]/g, '').split(' ');
+
+                    // Step B: Score chunks based on expanded intent
+                    const scoredChunks = currentKbChunks.map(chunk => {
+                        let score = 0;
+                        const lowerText = chunk.text.toLowerCase();
+                        if (lowerText.includes(query.toLowerCase())) score += 100; // Exact phrase
+                        
+                        searchTerms.forEach(term => {
+                            if (term.length > 3 && lowerText.includes(term)) {
+                                score += (lowerText.split(term).length - 1);
+                            }
+                        });
+                        return { ...chunk, score };
+                    }).filter(c => c.score > 0);
+
+                    // Step C: Get top chunks and format context
+                    const topChunks = scoredChunks.sort((a, b) => b.score - a.score).slice(0, 8);
+                    
+                    if (topChunks.length > 0) {
+                        contextText = topChunks.map(c => `[Document: ${c.docName}, Page ${c.page}]\n${c.text}`).join('\n\n');
+                    }
+                }
+
+                // 3. Conversational AI Generation
+                chatHistory.push({ role: 'user', content: query });
+                
+                const systemInstructions = `You are a highly intelligent, natural-language AI assistant. Your primary job is to help the user understand concepts, answer questions, and provide guidance.
+                
+CRITICAL INSTRUCTIONS:
+1. You have been provided with context excerpts from the user's uploaded PDF documents below.
+2. Answer the user's question naturally and conversationally, strictly using the provided context.
+3. Act like an expert tutor. Break down complex procedures or limitations so they are easy to read. Use bullet points if helpful.
+4. If the context DOES NOT contain the answer, politely state: "I don't have information about that in the uploaded documents." DO NOT make up an answer using outside knowledge.
+5. If the user's question is vague, answer based on what you have, and ask a follow-up question to clarify their needs.
+6. Whenever you use a fact from the text, append a citation like [Page X] at the end of the sentence.
+
+--- BEGIN CONTEXT FROM DOCUMENTS ---
+${contextText || "No relevant documents found."}
+--- END CONTEXT ---`;
+
+                const messagesForAI = [{ role: 'system', content: systemInstructions }, ...chatHistory.slice(-5)];
+
+                const response = await puter.ai.chat(messagesForAI);
+                const responseText = typeof response === 'string' ? response : response?.message?.content || JSON.stringify(response);
+
+                chatHistory.push({ role: 'assistant', content: responseText });
+                
+                // 4. Render output
+                updateMessage(loadingId, parseMarkdown(responseText));
+
+            } catch (e) {
+                console.error("Chat Error:", e);
+                updateMessage(loadingId, `<p class="text-red-500">I encountered an error connecting to the AI engine. Please try again.</p>`);
+            } finally {
+                toggleInput(true);
+            }
+        }
+
+        // --- PDF Ingestion Engine ---
+        document.getElementById('process-btn').addEventListener('click', async () => {
+            const file = document.getElementById('pdf-upload').files[0];
+            const docNameInput = document.getElementById('doc-name').value.trim();
+            const docName = docNameInput || file.name.replace('.pdf', '');
+            
+            if (!file) return;
+
+            const logEl = document.getElementById('ingest-log');
+            const log = (msg) => { logEl.innerHTML += `<div>> ${msg}</div>`; logEl.scrollTop = logEl.scrollHeight; };
+            
+            logEl.classList.remove('hidden');
+            document.getElementById('process-btn').disabled = true;
+            log(`Starting processing: ${docName}`);
+
+            try {
+                const pdf = await pdfjsLib.getDocument({data: await file.arrayBuffer()}).promise;
+                log(`Loaded PDF. Pages: ${pdf.numPages}`);
+                
+                let newChunks = [];
+                // Chunking logic: Combine pages slightly to prevent cutting off sentences at page breaks
+                let bufferText = "";
+                let bufferStartPage = 1;
+
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const content = await page.getTextContent();
+                    const pageText = content.items.map(it => it.str).join(' ').replace(/\s+/g, ' ').trim();
+                    
+                    if (pageText.length > 20) {
+                        newChunks.push({
+                            docName: docName,
+                            page: i,
+                            text: pageText
+                        });
+                    }
+                    if (i % 20 === 0) log(`Extracted Page ${i}/${pdf.numPages}...`);
+                }
+
+                log(`Extraction complete. Saving to database...`);
+
+                // Append to existing chunks
+                currentKbChunks.push(...newChunks);
+                kbManifest.totalChunks = currentKbChunks.length;
+                
+                // Save in chunks to Puter KV (Sharding)
+                const CHUNKS_PER_SHARD = 150;
+                let shardIndex = 0;
+                for (let i = 0; i < currentKbChunks.length; i += CHUNKS_PER_SHARD) {
+                    const shard = currentKbChunks.slice(i, i + CHUNKS_PER_SHARD);
+                    await puter.kv.set(`kb_shard_${shardIndex}`, JSON.stringify({ chunks: shard }));
+                    shardIndex++;
+                }
+                
+                kbManifest.shards = shardIndex;
+                await puter.kv.set(KB_MANIFEST_KEY, JSON.stringify(kbManifest));
+
+                log(`Successfully learned document!`);
+                document.getElementById('total-chunks').textContent = kbManifest.totalChunks;
+                document.getElementById('kb-badge').classList.remove('hidden');
+                
+                // Reset inputs
+                document.getElementById('pdf-upload').value = '';
+                document.getElementById('file-name-display').textContent = 'No file selected';
+                document.getElementById('doc-name').value = '';
+                document.getElementById('process-btn').classList.add('hidden');
+
+            } catch (e) {
+                log(`<span style="color: red;">Error: ${e.message}</span>`);
+            } finally {
+                document.getElementById('process-btn').disabled = false;
+            }
+        });
+
+        async function clearDatabase() {
+            if(!confirm("Are you sure you want to delete all learned documents?")) return;
+            try {
+                await puter.kv.del(KB_MANIFEST_KEY);
+                kbManifest = { shards: 0, totalChunks: 0 };
+                currentKbChunks = [];
+                document.getElementById('total-chunks').textContent = '0';
+                document.getElementById('kb-badge').classList.add('hidden');
+                document.getElementById('ingest-log').innerHTML = '> Database cleared.';
+            } catch (e) { alert("Error clearing DB: " + e.message); }
+        }
+
+        // --- UI Utilities ---
+        function renderMessage(role, content) {
+            const id = 'msg-' + Date.now();
+            const container = document.getElementById('chat-box');
+            
+            const wrapper = document.createElement('div');
+            wrapper.className = `msg-wrapper ${role}`;
+            
+            wrapper.innerHTML = `<div id="${id}" class="msg ${role}">${content}</div>`;
+            container.appendChild(wrapper);
+            
+            // Scroll to bottom
+            const chatMain = document.getElementById('chat-container');
+            chatMain.scrollTop = chatMain.scrollHeight;
+            
+            return id;
+        }
+
+        function updateMessage(id, content) {
+            const el = document.getElementById(id);
+            if (el) {
+                el.innerHTML = content;
+                const chatMain = document.getElementById('chat-container');
+                chatMain.scrollTop = chatMain.scrollHeight;
+            }
+        }
+
+        function toggleInput(enabled) {
+            document.getElementById('chat-input').disabled = !enabled;
+            document.getElementById('send-btn').disabled = !enabled;
+            if (enabled) document.getElementById('chat-input').focus();
+        }
+
+        function parseMarkdown(text) {
+            let html = text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/\[Page (\d+)\]/g, '<span class="citation">Page $1</span>')
+                .replace(/\n\n/g, '</p><p>')
+                .replace(/\n- (.*)/g, '<li>$1</li>');
+            
+            if (html.includes('<li>')) html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+            return `<p>${html}</p>`;
         }
     </script>
 </body>
