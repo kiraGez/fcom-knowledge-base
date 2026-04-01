@@ -261,7 +261,7 @@
                 messagesEl.innerHTML = '';
             }
             
-            messagesEl.innerHTML += `<div class="message message-user">Debug: Check pages 90-100 and search 'turbulent'</div>`;
+            messagesEl.innerHTML += `<div class="message message-user">Debug: Check first 5 chunks and page coverage</div>`;
             
             const indexData = await puter.kv.get(INDEX_KEY);
             const index = indexData ? JSON.parse(indexData) : {};
@@ -282,39 +282,38 @@
             const chunkKeys = index[docId].chunks || [];
             messagesEl.innerHTML += `<div class="message message-assistant"><p>Total chunks: ${chunkKeys.length}</p></div>`;
             
-            // Check for pages 90-100 specifically
-            let found90s = false;
+            // Show first 5 chunks to see page coverage
+            messagesEl.innerHTML += `<div class="message message-assistant"><strong>First 5 chunks (page ranges):</strong></div>`;
+            for (let i = 0; i < Math.min(5, chunkKeys.length); i++) {
+                const chunkData = await puter.kv.get(chunkKeys[i]);
+                if (chunkData) {
+                    const chunk = JSON.parse(chunkData);
+                    messagesEl.innerHTML += `
+                        <div class="message message-assistant">
+                            <strong>Chunk ${i+1}: Pages ${chunk.startPage}-${chunk.endPage || chunk.startPage}</strong>
+                            <div class="text-xs text-[var(--efb-text-dim)] mt-1">${escapeHtml(chunk.text.slice(0, 300))}...</div>
+                        </div>`;
+                }
+            }
+            
+            // Check if page 96 exists
+            let found96 = false;
             for (let i = 0; i < chunkKeys.length; i++) {
                 const chunkData = await puter.kv.get(chunkKeys[i]);
                 if (chunkData) {
                     const chunk = JSON.parse(chunkData);
-                    if (chunk.startPage >= 90 && chunk.startPage <= 105) {
-                        messagesEl.innerHTML += `
-                            <div class="message message-assistant">
-                                <strong class="text-[var(--efb-success)]">✅ Pages ${chunk.startPage}-${chunk.endPage || chunk.startPage} EXISTS</strong>
-                                <div class="text-xs text-[var(--efb-text-dim)] mt-1 font-mono">${escapeHtml(chunk.text.slice(0, 400))}...</div>
-                            </div>`;
-                        found90s = true;
+                    if (chunk.startPage <= 96 && (chunk.endPage || chunk.startPage) >= 96) {
+                        messagesEl.innerHTML += `<div class="message message-assistant"><p class="text-[var(--efb-success)]">✅ Page 96 is in chunk: Pages ${chunk.startPage}-${chunk.endPage || chunk.startPage}</p></div>`;
+                        found96 = true;
+                        break;
                     }
                 }
             }
             
-            if (!found90s) {
-                messagesEl.innerHTML += `<div class="message message-assistant"><p class="text-[var(--efb-danger)]">❌ No chunks found for pages 90-105. The turbulence info (page 96) is MISSING!</p></div>`;
+            if (!found96) {
+                messagesEl.innerHTML += `<div class="message message-assistant"><p class="text-[var(--efb-danger)]">❌ PAGE 96 IS MISSING! The turbulence penetration speed info is not in the database.</p>
+                    <p class="text-sm mt-2">Solution: Clear database and re-upload PDF. The chunking may have skipped early pages.</p></div>`;
             }
-            
-            // Also search for 'turbulent'
-            let foundTurb = 0;
-            for (let i = 0; i < chunkKeys.length; i++) {
-                const chunkData = await puter.kv.get(chunkKeys[i]);
-                if (chunkData) {
-                    const chunk = JSON.parse(chunkData);
-                    if (chunk.text.toLowerCase().includes('turbulent')) {
-                        foundTurb++;
-                    }
-                }
-            }
-            messagesEl.innerHTML += `<div class="message message-assistant"><p>Chunks with 'turbulent': ${foundTurb}</p></div>`;
         }
         
         async function loadDbStats() {
