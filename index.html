@@ -394,13 +394,33 @@ IMPORTANT RULES:
 Context from the manual:
 ${contextInfo}`;
 
+            // Build messages array for Puter AI
             const messages = [
                 { role: 'system', content: systemPrompt },
                 ...history.slice(-6) // Keep last 3 exchanges for context
             ];
             
-            const response = await puter.ai.chat(messages, { model: 'claude-3-5-sonnet' });
-            return response.message?.content || response.toString();
+            try {
+                // Use Puter AI chat - try different response formats
+                let response = await puter.ai.chat(query, { 
+                    model: 'claude-3-5-sonnet',
+                    system: systemPrompt 
+                });
+                
+                // Handle different response formats from Puter
+                if (typeof response === 'string') return response;
+                if (response?.message?.content) return response.message.content;
+                if (response?.content) return response.content;
+                if (response?.text) return response.text;
+                if (response?.response) return response.response;
+                
+                // If all else fails, stringify
+                console.log('Raw AI response:', response);
+                return JSON.stringify(response);
+            } catch (e) {
+                console.error('AI Error:', e);
+                throw new Error(`AI request failed: ${e.message || 'Unknown error'}`);
+            }
         }
         
         function formatResponse(text, chunks) {
