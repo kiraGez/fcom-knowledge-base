@@ -238,7 +238,7 @@
                     const textContent = await page.getTextContent();
                     const text = textContent.items.map(item => item.str).join(' ');
                     pages.push({ page: i, text });
-                    updateProcessStatus('loading', `Extracting page ${i}/${totalPages}`, 5 + (i / totalPages) * 50));
+                    updateProcessStatus('loading', `Extracting page ${i}/${totalPages}`, 5 + (i / totalPages) * 50);
                 }
                 
                 // Chunk pages into safe-size chunks
