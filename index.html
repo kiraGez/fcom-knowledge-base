@@ -401,9 +401,9 @@ ${contextInfo}`;
             ];
             
             try {
-                // Use Puter AI chat - try different response formats
+                // Use Puter AI chat - use claude-sonnet (valid Puter model name)
                 let response = await puter.ai.chat(query, { 
-                    model: 'claude-3-5-sonnet',
+                    model: 'claude-sonnet',
                     system: systemPrompt 
                 });
                 
