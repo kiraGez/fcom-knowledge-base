@@ -1,438 +1,463 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="antialiased">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Document Assistant</title>
+    <title>AeroAssist AI | Copilot & Instructor</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://js.puter.com/v2/"></script>
     
     <style>
         :root {
-            --bg-main: #ffffff;
-            --bg-chat: #f9fafb;
-            --border-color: #e5e7eb;
-            --text-main: #111827;
-            --text-muted: #6b7280;
+            --bg-app: #f8fafc; 
+            --bg-sidebar: #0f172a; 
+            --border: #e2e8f0;
             --accent: #2563eb;
-            --user-bubble: #2563eb;
-            --ai-bubble: #ffffff;
+            --accent-hover: #1d4ed8;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
         }
 
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --bg-main: #0f172a;
-                --bg-chat: #1e293b;
-                --border-color: #334155;
-                --text-main: #f8fafc;
-                --text-muted: #94a3b8;
-                --accent: #3b82f6;
-                --user-bubble: #3b82f6;
-                --ai-bubble: #0f172a;
-            }
-        }
-
-        body { background: var(--bg-main); color: var(--text-main); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; overflow: hidden; }
-        .border-custom { border-color: var(--border-color); }
-        .bg-chat { background: var(--bg-chat); }
+        body { background: var(--bg-app); color: var(--text-main); font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; height: 100vh; display: flex; overflow: hidden; }
         
-        .msg-container { display: flex; flex-direction: column; gap: 1.5rem; padding: 1.5rem; }
-        .msg-wrapper { display: flex; width: 100%; }
+        /* Layout */
+        #sidebar { width: 280px; background: var(--bg-sidebar); color: #fff; display: flex; flex-direction: column; flex-shrink: 0; z-index: 20; }
+        #main-view { flex: 1; display: flex; flex-direction: column; position: relative; }
+        
+        /* Chat UI (Bubble Style) */
+        #chat-container { padding: 2rem; padding-bottom: 140px; } 
+        .msg-wrapper { display: flex; width: 100%; margin-bottom: 1.5rem; max-width: 900px; margin-left: auto; margin-right: auto; }
         .msg-wrapper.user { justify-content: flex-end; }
         .msg-wrapper.ai { justify-content: flex-start; }
         
-        .msg { max-width: 80%; padding: 1rem 1.25rem; border-radius: 1rem; line-height: 1.6; font-size: 1rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
-        .msg.user { background: var(--user-bubble); color: #ffffff; border-bottom-right-radius: 0.25rem; }
-        .msg.ai { background: var(--ai-bubble); color: var(--text-main); border: 1px solid var(--border-color); border-bottom-left-radius: 0.25rem; }
+        .avatar { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .avatar.ai { background: white; color: var(--accent); margin-right: 1rem; border: 1px solid var(--border); }
         
-        .msg.ai p { margin-bottom: 0.75rem; }
-        .msg.ai p:last-child { margin-bottom: 0; }
-        .msg.ai ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 0.75rem; }
-        .msg.ai li { margin-bottom: 0.25rem; }
-        .msg.ai strong { font-weight: 600; color: inherit; }
+        .msg-bubble { max-width: 80%; padding: 1rem 1.25rem; border-radius: 16px; line-height: 1.6; font-size: 0.95rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .msg-wrapper.user .msg-bubble { background: var(--accent); color: white; border-bottom-right-radius: 4px; }
+        .msg-wrapper.ai .msg-bubble { background: white; color: var(--text-main); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
         
-        .citation { font-size: 0.8em; background: rgba(148, 163, 184, 0.2); padding: 0.1rem 0.4rem; border-radius: 0.25rem; font-family: monospace; opacity: 0.8; margin-left: 0.25rem; }
+        /* Markdown / Content Styling inside Bubbles */
+        .msg-bubble p { margin-bottom: 0.75rem; }
+        .msg-bubble p:last-child { margin-bottom: 0; }
+        .msg-bubble ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 0.75rem; }
+        .msg-bubble li { margin-bottom: 0.5rem; }
+        .msg-bubble strong { font-weight: 600; color: inherit; }
+        
+        /* Citation Pills */
+        .citation { display: inline-flex; align-items: center; font-size: 0.75rem; background: #eff6ff; color: var(--accent); padding: 0.15rem 0.5rem; border-radius: 999px; font-weight: 600; margin-left: 0.4rem; cursor: pointer; border: 1px solid #bfdbfe; transition: all 0.2s; }
+        .citation:hover { background: var(--accent); color: #fff; transform: translateY(-1px); }
 
-        .loader { display: inline-flex; gap: 4px; align-items: center; height: 24px; }
-        .loader span { width: 6px; height: 6px; background-color: var(--text-muted); border-radius: 50%; animation: bounce 1.4s infinite ease-in-out both; }
-        .loader span:nth-child(1) { animation-delay: -0.32s; }
-        .loader span:nth-child(2) { animation-delay: -0.16s; }
-        @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+        /* Floating Input Area */
+        .input-dock { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(to top, var(--bg-app) 60%, transparent); padding: 2rem; display: flex; justify-content: center; pointer-events: none; }
+        .input-box { pointer-events: auto; width: 100%; max-width: 800px; background: white; border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); display: flex; align-items: flex-end; padding: 0.5rem; }
+        .input-box:focus-within { border-color: var(--accent); box-shadow: 0 10px 25px -5px rgba(37,99,235,0.15), 0 0 0 3px rgba(37,99,235,0.1); }
+        textarea { resize: none; border: none; outline: none; background: transparent; width: 100%; padding: 0.75rem; max-height: 200px; font-size: 0.95rem; color: var(--text-main); }
+        
+        .btn-primary { background: var(--accent); color: white; border-radius: 12px; padding: 0.6rem; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
+        .btn-primary:hover:not(:disabled) { background: var(--accent-hover); transform: scale(1.05); }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
+        /* Loader Animation */
+        .typing-indicator { display: flex; align-items: center; gap: 4px; padding: 0.5rem; }
+        .typing-indicator span { display: inline-block; width: 6px; height: 6px; background-color: var(--text-muted); border-radius: 50%; animation: typing 1.4s infinite ease-in-out both; }
+        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes typing { 0%, 80%, 100% { transform: scale(0.5); opacity: 0.5; } 40% { transform: scale(1); opacity: 1; } }
+        
         .scrollbar-hide::-webkit-scrollbar { display: none; }
-        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-        
-        .input-box { background: var(--ai-bubble); border: 1px solid var(--border-color); color: var(--text-main); transition: all 0.2s; }
-        .input-box:focus-within { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
     </style>
 </head>
-<body class="h-screen flex flex-col">
+<body>
 
-    <header class="h-16 border-b border-custom flex items-center justify-between px-6 shrink-0 bg-chat">
-        <div class="flex items-center gap-3">
-            <h1 class="text-xl font-bold tracking-tight">AI Knowledge Assistant</h1>
-            <span id="kb-badge" class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100 hidden">KB Active</span>
+    <aside id="sidebar">
+        <div class="p-6 border-b border-slate-800">
+            <h1 class="text-2xl font-bold tracking-tight text-white">AeroAssist<span class="text-blue-500">.ai</span></h1>
+            <p class="text-xs text-slate-400 mt-1 uppercase tracking-widest font-semibold">Enterprise Flight Ops</p>
         </div>
-        <div class="flex items-center gap-4">
-            <span id="auth-status" class="text-sm text-gray-500 font-medium">Connecting...</span>
-            <button onclick="toggleKbManager(true)" class="p-2 text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg transition">
-                Manage Documents
-            </button>
-        </div>
-    </header>
-
-    <main class="flex-1 overflow-y-auto bg-chat scrollbar-hide" id="chat-container">
-        <div class="msg-container max-w-4xl mx-auto" id="chat-box">
-            <div id="welcome-msg" class="flex flex-col items-center justify-center py-20 opacity-80 text-center">
-                <div class="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mb-4">
-                    <svg class="w-8 h-8 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+        
+        <div class="p-4 flex-1 overflow-y-auto">
+            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">Active Library</p>
+            <div id="library-list" class="space-y-2">
+                <div class="p-4 bg-slate-800/50 rounded-xl border border-slate-700/50 text-sm backdrop-blur-sm">
+                    <div class="flex items-center gap-2 mb-1">
+                        <div class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]"></div>
+                        <span class="font-semibold text-slate-100">Global Knowledge Base</span>
+                    </div>
+                    <p class="text-xs text-slate-400" id="db-stats">Checking status...</p>
                 </div>
-                <h2 class="text-2xl font-bold mb-2">How can I help you today?</h2>
-                <p class="text-[var(--text-muted)] max-w-md">I am an AI assistant grounded in your uploaded documents. Ask me anything, and I will explain it naturally based on your knowledge base.</p>
+            </div>
+        </div>
+
+        <div class="p-4 border-t border-slate-800 text-sm bg-slate-900/50 flex flex-col gap-3">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-sm font-bold shadow-inner" id="user-initial">?</div>
+                    <span id="auth-name" class="font-medium text-slate-300 truncate w-24">Guest</span>
+                </div>
+                <button id="auth-out-btn" class="hidden text-xs font-semibold text-rose-400 hover:text-rose-300 transition">Sign Out</button>
+            </div>
+            <button id="auth-in-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2.5 rounded-lg transition shadow-sm">Sign In to Puter</button>
+        </div>
+    </aside>
+
+    <main id="main-view">
+        <header class="h-16 border-b border-[var(--border)] flex items-center justify-between px-8 bg-white/80 backdrop-blur-md z-10 sticky top-0">
+            <div class="font-semibold text-sm text-slate-800 flex items-center gap-2">
+                <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                Assistant Mode
+            </div>
+            <button id="admin-toggle" class="hidden text-xs font-bold text-rose-600 bg-rose-50 border border-rose-100 px-4 py-2 rounded-lg hover:bg-rose-100 transition shadow-sm">Admin Dashboard</button>
+        </header>
+
+        <div id="chat-container" class="flex-1 overflow-y-auto scrollbar-hide">
+            <div id="welcome-screen" class="flex flex-col items-center justify-center h-[80%] text-center p-8">
+                <div class="w-20 h-20 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-6 shadow-sm border border-blue-100">
+                    <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                </div>
+                <h2 class="text-3xl font-bold text-slate-800 mb-3 tracking-tight">Welcome to AeroAssist</h2>
+                <p class="text-slate-500 max-w-md leading-relaxed">I am an AI instructor grounded in your airline's approved manuals. Ask me to explain procedures, lookup limitations, or say "Give me a quiz".</p>
+            </div>
+        </div>
+
+        <div class="input-dock">
+            <div class="input-box">
+                <textarea id="chat-input" rows="1" placeholder="Ask about a procedure, or say 'Create a quiz on hydraulics'..."></textarea>
+                <button id="send-btn" class="btn-primary">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M12 5l7 7-7 7"></path></svg>
+                </button>
             </div>
         </div>
     </main>
 
-    <div class="p-4 bg-chat border-t border-custom shrink-0">
-        <div class="max-w-4xl mx-auto relative input-box rounded-2xl flex items-end shadow-sm">
-            <textarea id="chat-input" rows="1" class="w-full bg-transparent p-4 outline-none resize-none max-h-32 min-h-[56px]" placeholder="Ask a question about your documents..."></textarea>
-            <button id="send-btn" class="p-3 m-1 rounded-xl bg-[var(--accent)] text-white hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
-            </button>
-        </div>
-        <p class="text-center text-xs text-[var(--text-muted)] mt-2">AI can make mistakes. Check important information.</p>
-    </div>
-
-    <div id="kb-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-[var(--bg-main)] w-full max-w-2xl rounded-2xl shadow-2xl border border-custom overflow-hidden flex flex-col max-h-[90vh]">
-            <div class="p-6 border-b border-custom flex justify-between items-center">
-                <div>
-                    <h2 class="text-xl font-bold">Knowledge Base</h2>
-                    <p class="text-sm text-[var(--text-muted)]">Upload PDFs for the AI to learn from.</p>
-                </div>
-                <button onclick="toggleKbManager(false)" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">✕</button>
+    <div id="admin-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-6">
+        <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
+            <div class="p-6 border-b border-[var(--border)] flex justify-between items-center bg-slate-50 rounded-t-2xl">
+                <h2 class="text-lg font-bold text-slate-800">Knowledge Base Administration</h2>
+                <button onclick="toggleAdmin(false)" class="text-slate-400 hover:text-slate-800 transition bg-white p-2 rounded-lg shadow-sm">✕</button>
             </div>
-            
-            <div class="p-6 overflow-y-auto space-y-6">
-                <div class="border-2 border-dashed border-custom rounded-xl p-8 text-center hover:border-[var(--accent)] transition">
-                    <input type="text" id="doc-name" placeholder="Document Name (e.g., Boeing 777 FCOM)" class="w-full p-2 mb-4 border border-custom rounded bg-transparent outline-none focus:border-[var(--accent)] text-sm">
-                    <input type="file" id="pdf-upload" accept=".pdf" class="hidden">
-                    <button onclick="document.getElementById('pdf-upload').click()" class="px-4 py-2 bg-[var(--ai-bubble)] border border-custom rounded-lg font-medium shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition mb-2">
-                        Select PDF File
-                    </button>
-                    <p id="file-name-display" class="text-xs text-[var(--text-muted)]">No file selected</p>
-                    
-                    <button id="process-btn" class="w-full mt-4 py-3 bg-[var(--accent)] text-white font-bold rounded-lg disabled:opacity-50 hidden">
-                        Process & Learn Document
-                    </button>
+            <div class="p-8 overflow-y-auto space-y-6">
+                <div class="bg-blue-50 border border-blue-100 p-4 rounded-xl text-sm text-blue-800 flex items-start gap-3">
+                    <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <p>Documents uploaded here are processed and instantly distributed as the "Ground Truth" for all pilots.</p>
                 </div>
                 
-                <div id="ingest-log" class="bg-gray-900 text-green-400 font-mono text-xs p-4 rounded-xl h-32 overflow-y-auto hidden">
-                    > System ready...
+                <div class="border-2 border-dashed border-slate-300 rounded-2xl p-8 text-center bg-slate-50 hover:bg-slate-100 transition">
+                    <input type="text" id="doc-title" placeholder="Document Identifier (e.g., B777 FCOM Vol 1)" class="w-full p-4 mb-4 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition">
+                    <input type="file" id="pdf-upload" accept=".pdf" class="hidden">
+                    <button onclick="document.getElementById('pdf-upload').click()" class="bg-white border border-slate-200 px-6 py-3 rounded-xl text-sm font-semibold shadow-sm hover:border-blue-400 hover:text-blue-600 transition mb-3">Select PDF Manual</button>
+                    <p id="file-name" class="text-xs text-slate-500 mb-4 font-mono">No file selected</p>
+                    <button id="ingest-btn" class="w-full bg-slate-900 hover:bg-black text-white font-bold py-4 rounded-xl hidden transition shadow-lg">Process & Distribute to Fleet</button>
                 </div>
-
-                <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl flex justify-between items-center border border-blue-100 dark:border-blue-900">
-                    <div>
-                        <h3 class="font-bold text-blue-800 dark:text-blue-300">Database Status</h3>
-                        <p class="text-sm text-blue-600 dark:text-blue-400">Total Indexed Chunks: <span id="total-chunks">0</span></p>
-                    </div>
-                    <button onclick="clearDatabase()" class="text-red-500 hover:text-red-700 text-sm font-medium px-3 py-1 border border-red-200 dark:border-red-900 rounded-md">
-                        Wipe Database
-                    </button>
-                </div>
+                
+                <div id="admin-log" class="bg-slate-900 text-emerald-400 font-mono text-xs p-5 rounded-xl h-40 overflow-y-auto hidden shadow-inner leading-relaxed"></div>
             </div>
+        </div>
+    </div>
+
+    <div id="source-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-6">
+        <div class="bg-white w-full max-w-3xl rounded-2xl shadow-2xl flex flex-col max-h-[85vh]">
+            <div class="p-5 border-b border-[var(--border)] flex justify-between items-center bg-slate-50 rounded-t-2xl">
+                <h3 class="font-bold text-sm flex items-center gap-2 text-slate-800">
+                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    Original Manual Excerpt
+                </h3>
+                <button onclick="toggleSource(false)" class="text-slate-400 hover:text-slate-800 bg-white p-2 rounded-lg shadow-sm transition">✕</button>
+            </div>
+            <div id="source-content" class="p-8 overflow-y-auto font-mono text-sm leading-relaxed text-slate-700 whitespace-pre-wrap"></div>
         </div>
     </div>
 
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
         
-        const KB_MANIFEST_KEY = 'global_kb_manifest';
-        let kbManifest = { shards: 0, totalChunks: 0 };
-        let currentKbChunks = []; // Loaded into memory
-        let chatHistory = [];
+        // ADMIN CONFIGURATION
+        const ADMIN_EMAILS = ['admin', 'wise_hat_2017']; 
+        const GLOBAL_KB_KEY = 'saas_global_kb_manifest';
         
-        // --- Initialization ---
-        window.onload = async () => {
+        let globalDb = { shards: 0, totalPages: 0 };
+        let memoryCache = []; 
+        let conversationHistory = [];
+
+        // --- AUTH & INIT (FIXED) ---
+        window.addEventListener('DOMContentLoaded', async () => {
+            const inBtn = document.getElementById('auth-in-btn');
+            const outBtn = document.getElementById('auth-out-btn');
+            
+            // Critical Check: Browsers block authentication on 'file://' protocols.
+            if (window.location.protocol === 'file:') {
+                inBtn.textContent = 'Auth Blocked (Local File)';
+                inBtn.classList.replace('bg-blue-600', 'bg-rose-600');
+                inBtn.onclick = () => alert("Puter Authentication requires a web server. It will NOT work if you just double-click the HTML file. Please open this using a Local Server (like VS Code 'Live Server') or host it directly on Puter.com.");
+                
+                await loadGlobalDatabase();
+                setupInputBehavior();
+                return; 
+            }
+
             try {
                 const isSignedIn = puter.auth.isSignedIn();
-                if (!isSignedIn) await puter.auth.signIn();
-                const user = await puter.auth.getUser();
-                document.getElementById('auth-status').textContent = user.username;
-                
-                await loadKnowledgeBase();
-            } catch (e) {
-                console.error("Auth error", e);
-                document.getElementById('auth-status').textContent = 'Guest Mode';
-                await loadKnowledgeBase(); // Try loading anyway
-            }
-            setupTextareaAutoResize();
-        };
 
-        function setupTextareaAutoResize() {
-            const tx = document.getElementById('chat-input');
-            tx.addEventListener("input", function() {
-                this.style.height = "auto";
-                this.style.height = (this.scrollHeight) + "px";
-            }, false);
-            tx.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleChatSubmit();
+                if (isSignedIn) {
+                    const user = await puter.auth.getUser();
+                    document.getElementById('auth-name').textContent = user.username;
+                    document.getElementById('user-initial').textContent = user.username.charAt(0).toUpperCase();
+                    
+                    inBtn.classList.add('hidden');
+                    outBtn.classList.remove('hidden');
+                    outBtn.onclick = () => { puter.auth.signOut(); location.reload(); };
+
+                    if (ADMIN_EMAILS.includes(user.username)) {
+                        document.getElementById('admin-toggle').classList.remove('hidden');
+                    }
+                } else {
+                    inBtn.onclick = async () => { 
+                        try {
+                            inBtn.textContent = "Connecting...";
+                            inBtn.disabled = true;
+                            await puter.auth.signIn(); 
+                            location.reload(); 
+                        } catch (e) {
+                            console.error("Sign-in cancelled or blocked:", e);
+                            alert("Sign-in failed. Please ensure your browser is not blocking pop-ups.");
+                            inBtn.textContent = "Sign In to Puter";
+                            inBtn.disabled = false;
+                        }
+                    };
                 }
-            });
-            document.getElementById('send-btn').addEventListener('click', handleChatSubmit);
-        }
-
-        function toggleKbManager(show) {
-            document.getElementById('kb-modal').style.display = show ? 'flex' : 'none';
-        }
-
-        document.getElementById('pdf-upload').addEventListener('change', function(e) {
-            if (e.target.files[0]) {
-                document.getElementById('file-name-display').textContent = e.target.files[0].name;
-                document.getElementById('process-btn').classList.remove('hidden');
-                document.getElementById('process-btn').disabled = false;
+            } catch (error) {
+                console.error("Initialization Error:", error);
             }
+
+            await loadGlobalDatabase();
+            setupInputBehavior();
         });
 
-        // --- RAG Engine: Data Loader ---
-        async function loadKnowledgeBase() {
+        // --- GLOBAL DATABASE LOADER ---
+        async function loadGlobalDatabase() {
             try {
-                const data = await puter.kv.get(KB_MANIFEST_KEY);
+                const data = await puter.kv.get(GLOBAL_KB_KEY);
                 if (data) {
-                    kbManifest = JSON.parse(data);
-                    currentKbChunks = [];
+                    globalDb = JSON.parse(data);
+                    document.getElementById('db-stats').textContent = `${globalDb.totalPages} pages indexed`;
                     
-                    // Load all shards into memory for fast searching
-                    for (let i = 0; i < kbManifest.shards; i++) {
-                        const shardData = await puter.kv.get(`kb_shard_${i}`);
-                        if (shardData) {
-                            currentKbChunks.push(...JSON.parse(shardData).chunks);
-                        }
+                    for (let i = 0; i < globalDb.shards; i++) {
+                        const shard = await puter.kv.get(`saas_kb_shard_${i}`);
+                        if (shard) memoryCache.push(...JSON.parse(shard).chunks);
                     }
-                    
-                    document.getElementById('total-chunks').textContent = kbManifest.totalChunks;
-                    if (kbManifest.totalChunks > 0) {
-                        document.getElementById('kb-badge').classList.remove('hidden');
-                    }
+                } else {
+                    document.getElementById('db-stats').textContent = "Database empty. Awaiting admin upload.";
                 }
-            } catch (e) { console.error("Error loading KB", e); }
+            } catch (e) { console.error("DB Load Error", e); }
         }
 
-        // --- Core Chatbot Engine ---
-        async function handleChatSubmit() {
-            const inputEl = document.getElementById('chat-input');
-            const query = inputEl.value.trim();
+        // --- THE RAG ENGINE (Smart & Conversational) ---
+        async function handleQuery() {
+            const input = document.getElementById('chat-input');
+            const query = input.value.trim();
             if (!query) return;
 
-            inputEl.value = '';
-            inputEl.style.height = 'auto'; // reset height
-            document.getElementById('welcome-msg').style.display = 'none';
+            input.value = '';
+            input.style.height = 'auto';
+            document.getElementById('welcome-screen').style.display = 'none';
 
-            // 1. Render User Message
-            renderMessage('user', query);
-            const loadingId = renderMessage('ai', `<div class="loader"><span></span><span></span><span></span></div>`);
+            renderUserMsg(query);
+            const loadId = renderAiLoader();
             toggleInput(false);
 
             try {
-                let contextText = "";
+                let contextData = "";
 
-                // 2. RAG Search (Only if KB has data)
-                if (currentKbChunks.length > 0) {
-                    // Step A: Hidden AI call to understand intent and extract search terms
-                    const intentPrompt = `Given this user question: "${query}"\nExtract 5-7 highly specific keywords or technical terms that would be best to search a PDF database. Return ONLY the words separated by spaces. No explanation.`;
-                    const searchTermsStr = await puter.ai.chat(intentPrompt);
-                    const searchTerms = (typeof searchTermsStr === 'string' ? searchTermsStr : searchTermsStr?.message?.content || query)
-                                        .toLowerCase().replace(/[^\w\s]/g, '').split(' ');
-
-                    // Step B: Score chunks based on expanded intent
-                    const scoredChunks = currentKbChunks.map(chunk => {
+                // 1. Direct Search 
+                if (memoryCache.length > 0) {
+                    const terms = query.toLowerCase().replace(/[^\w\s]/g, '').split(' ').filter(t => t.length > 2);
+                    
+                    const scored = memoryCache.map(chunk => {
                         let score = 0;
-                        const lowerText = chunk.text.toLowerCase();
-                        if (lowerText.includes(query.toLowerCase())) score += 100; // Exact phrase
+                        const txt = chunk.text.toLowerCase();
+                        if (txt.includes(query.toLowerCase())) score += 50; 
                         
-                        searchTerms.forEach(term => {
-                            if (term.length > 3 && lowerText.includes(term)) {
-                                score += (lowerText.split(term).length - 1);
-                            }
+                        terms.forEach(term => {
+                            if (txt.includes(term)) score += 1;
                         });
                         return { ...chunk, score };
                     }).filter(c => c.score > 0);
 
-                    // Step C: Get top chunks and format context
-                    const topChunks = scoredChunks.sort((a, b) => b.score - a.score).slice(0, 8);
-                    
-                    if (topChunks.length > 0) {
-                        contextText = topChunks.map(c => `[Document: ${c.docName}, Page ${c.page}]\n${c.text}`).join('\n\n');
+                    const topPages = scored.sort((a, b) => b.score - a.score).slice(0, 8);
+                    if (topPages.length > 0) {
+                        contextData = topPages.map(c => `[DOC: ${c.doc}, PAGE: ${c.page}]\n${c.text}`).join('\n\n');
                     }
                 }
 
-                // 3. Conversational AI Generation
-                chatHistory.push({ role: 'user', content: query });
+                conversationHistory.push({ role: 'user', content: query });
+
+                // 2. The Smart System Prompt
+                const systemPrompt = `You are 'AeroAssist', a friendly, intelligent flight instructor and pilot companion AI.
+
+YOUR DIRECTIVES:
+1. CONVERSATION: If the user says "Hi", greets you, or asks a general question, respond conversationally.
+2. QUIZZES & REQUESTS: If the user asks for a quiz or scenario WITHOUT specifying a topic, politely ask them what system or topic they want to cover. 
+3. TECHNICAL QUERIES: If the user asks a technical question or asks for a specific quiz, you MUST use the "KNOWLEDGE BASE EXCERPTS" provided below.
+4. MISSING DATA: If they ask a specific technical question that requires data NOT found in the excerpts, say "I don't have that specific data in my current manuals."
+5. CITATIONS: Whenever you state a technical fact from the excerpts, append a citation like [Page X] at the end.
+
+--- KNOWLEDGE BASE EXCERPTS ---
+${contextData || "(No specific technical data retrieved. You may chat conversationally or ask for clarification.)"}
+-------------------------------`;
+
+                const messages = [{ role: 'system', content: systemPrompt }, ...conversationHistory.slice(-6)];
+                const responseRaw = await puter.ai.chat(messages);
+                const responseText = typeof responseRaw === 'string' ? responseRaw : responseRaw?.message?.content || "Error parsing response.";
+
+                conversationHistory.push({ role: 'assistant', content: responseText });
                 
-                const systemInstructions = `You are a highly intelligent, natural-language AI assistant. Your primary job is to help the user understand concepts, answer questions, and provide guidance.
-                
-CRITICAL INSTRUCTIONS:
-1. You have been provided with context excerpts from the user's uploaded PDF documents below.
-2. Answer the user's question naturally and conversationally, strictly using the provided context.
-3. Act like an expert tutor. Break down complex procedures or limitations so they are easy to read. Use bullet points if helpful.
-4. If the context DOES NOT contain the answer, politely state: "I don't have information about that in the uploaded documents." DO NOT make up an answer using outside knowledge.
-5. If the user's question is vague, answer based on what you have, and ask a follow-up question to clarify their needs.
-6. Whenever you use a fact from the text, append a citation like [Page X] at the end of the sentence.
-
---- BEGIN CONTEXT FROM DOCUMENTS ---
-${contextText || "No relevant documents found."}
---- END CONTEXT ---`;
-
-                const messagesForAI = [{ role: 'system', content: systemInstructions }, ...chatHistory.slice(-5)];
-
-                const response = await puter.ai.chat(messagesForAI);
-                const responseText = typeof response === 'string' ? response : response?.message?.content || JSON.stringify(response);
-
-                chatHistory.push({ role: 'assistant', content: responseText });
-                
-                // 4. Render output
-                updateMessage(loadingId, parseMarkdown(responseText));
+                // 3. Render and fix layout
+                updateAiMsg(loadId, parseMarkdown(responseText));
 
             } catch (e) {
-                console.error("Chat Error:", e);
-                updateMessage(loadingId, `<p class="text-red-500">I encountered an error connecting to the AI engine. Please try again.</p>`);
+                console.error(e);
+                updateAiMsg(loadId, `<span class="text-rose-600 font-medium">Connection error. Please try again.</span>`);
             } finally {
                 toggleInput(true);
             }
         }
 
-        // --- PDF Ingestion Engine ---
-        document.getElementById('process-btn').addEventListener('click', async () => {
-            const file = document.getElementById('pdf-upload').files[0];
-            const docNameInput = document.getElementById('doc-name').value.trim();
-            const docName = docNameInput || file.name.replace('.pdf', '');
-            
-            if (!file) return;
-
-            const logEl = document.getElementById('ingest-log');
-            const log = (msg) => { logEl.innerHTML += `<div>> ${msg}</div>`; logEl.scrollTop = logEl.scrollHeight; };
-            
-            logEl.classList.remove('hidden');
-            document.getElementById('process-btn').disabled = true;
-            log(`Starting processing: ${docName}`);
-
-            try {
-                const pdf = await pdfjsLib.getDocument({data: await file.arrayBuffer()}).promise;
-                log(`Loaded PDF. Pages: ${pdf.numPages}`);
-                
-                let newChunks = [];
-                // Chunking logic: Combine pages slightly to prevent cutting off sentences at page breaks
-                let bufferText = "";
-                let bufferStartPage = 1;
-
-                for (let i = 1; i <= pdf.numPages; i++) {
-                    const page = await pdf.getPage(i);
-                    const content = await page.getTextContent();
-                    const pageText = content.items.map(it => it.str).join(' ').replace(/\s+/g, ' ').trim();
-                    
-                    if (pageText.length > 20) {
-                        newChunks.push({
-                            docName: docName,
-                            page: i,
-                            text: pageText
-                        });
-                    }
-                    if (i % 20 === 0) log(`Extracted Page ${i}/${pdf.numPages}...`);
-                }
-
-                log(`Extraction complete. Saving to database...`);
-
-                // Append to existing chunks
-                currentKbChunks.push(...newChunks);
-                kbManifest.totalChunks = currentKbChunks.length;
-                
-                // Save in chunks to Puter KV (Sharding)
-                const CHUNKS_PER_SHARD = 150;
-                let shardIndex = 0;
-                for (let i = 0; i < currentKbChunks.length; i += CHUNKS_PER_SHARD) {
-                    const shard = currentKbChunks.slice(i, i + CHUNKS_PER_SHARD);
-                    await puter.kv.set(`kb_shard_${shardIndex}`, JSON.stringify({ chunks: shard }));
-                    shardIndex++;
-                }
-                
-                kbManifest.shards = shardIndex;
-                await puter.kv.set(KB_MANIFEST_KEY, JSON.stringify(kbManifest));
-
-                log(`Successfully learned document!`);
-                document.getElementById('total-chunks').textContent = kbManifest.totalChunks;
-                document.getElementById('kb-badge').classList.remove('hidden');
-                
-                // Reset inputs
-                document.getElementById('pdf-upload').value = '';
-                document.getElementById('file-name-display').textContent = 'No file selected';
-                document.getElementById('doc-name').value = '';
-                document.getElementById('process-btn').classList.add('hidden');
-
-            } catch (e) {
-                log(`<span style="color: red;">Error: ${e.message}</span>`);
-            } finally {
-                document.getElementById('process-btn').disabled = false;
-            }
-        });
-
-        async function clearDatabase() {
-            if(!confirm("Are you sure you want to delete all learned documents?")) return;
-            try {
-                await puter.kv.del(KB_MANIFEST_KEY);
-                kbManifest = { shards: 0, totalChunks: 0 };
-                currentKbChunks = [];
-                document.getElementById('total-chunks').textContent = '0';
-                document.getElementById('kb-badge').classList.add('hidden');
-                document.getElementById('ingest-log').innerHTML = '> Database cleared.';
-            } catch (e) { alert("Error clearing DB: " + e.message); }
+        // --- UI & RENDER UTILS ---
+        function renderUserMsg(text) {
+            const html = `
+            <div class="msg-wrapper user">
+                <div class="msg-bubble">${text}</div>
+            </div>`;
+            document.getElementById('chat-container').insertAdjacentHTML('beforeend', html);
+            scrollToBottom();
         }
 
-        // --- UI Utilities ---
-        function renderMessage(role, content) {
+        function renderAiLoader() {
             const id = 'msg-' + Date.now();
-            const container = document.getElementById('chat-box');
-            
-            const wrapper = document.createElement('div');
-            wrapper.className = `msg-wrapper ${role}`;
-            
-            wrapper.innerHTML = `<div id="${id}" class="msg ${role}">${content}</div>`;
-            container.appendChild(wrapper);
-            
-            // Scroll to bottom
-            const chatMain = document.getElementById('chat-container');
-            chatMain.scrollTop = chatMain.scrollHeight;
-            
+            const html = `
+            <div class="msg-wrapper ai" id="${id}">
+                <div class="avatar ai">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                </div>
+                <div class="msg-bubble flex items-center h-12">
+                    <div class="typing-indicator"><span></span><span></span><span></span></div>
+                </div>
+            </div>`;
+            document.getElementById('chat-container').insertAdjacentHTML('beforeend', html);
+            scrollToBottom();
             return id;
         }
 
-        function updateMessage(id, content) {
-            const el = document.getElementById(id);
-            if (el) {
-                el.innerHTML = content;
-                const chatMain = document.getElementById('chat-container');
-                chatMain.scrollTop = chatMain.scrollHeight;
-            }
-        }
-
-        function toggleInput(enabled) {
-            document.getElementById('chat-input').disabled = !enabled;
-            document.getElementById('send-btn').disabled = !enabled;
-            if (enabled) document.getElementById('chat-input').focus();
+        function updateAiMsg(id, htmlContent) {
+            const bubble = document.querySelector(`#${id} .msg-bubble`);
+            bubble.className = 'msg-bubble'; 
+            bubble.innerHTML = htmlContent;
+            scrollToBottom();
         }
 
         function parseMarkdown(text) {
             let html = text
                 .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
                 .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                .replace(/\[Page (\d+)\]/g, '<span class="citation">Page $1</span>')
+                .replace(/\[Page (\d+)\]/gi, '<span class="citation" onclick="openSource($1)">Page $1</span>')
                 .replace(/\n\n/g, '</p><p>')
                 .replace(/\n- (.*)/g, '<li>$1</li>');
-            
             if (html.includes('<li>')) html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
             return `<p>${html}</p>`;
+        }
+
+        function openSource(pageNum) {
+            const chunks = memoryCache.filter(c => c.page === parseInt(pageNum));
+            const content = document.getElementById('source-content');
+            if (chunks.length > 0) {
+                content.innerHTML = chunks.map(c => 
+                    `<div class="mb-6 pb-6 border-b border-slate-200 last:border-0">
+                        <div class="text-blue-600 font-bold text-xs uppercase tracking-wider mb-3 bg-blue-50 inline-block px-3 py-1 rounded-md">Source: ${c.doc}</div>
+                        ${c.text}
+                    </div>`
+                ).join('');
+            } else {
+                content.innerHTML = "Source text unavailable.";
+            }
+            toggleSource(true);
+        }
+
+        // --- ADMIN INGESTION LOGIC ---
+        document.getElementById('pdf-upload').addEventListener('change', e => {
+            if (e.target.files[0]) {
+                document.getElementById('file-name').textContent = e.target.files[0].name;
+                document.getElementById('ingest-btn').classList.remove('hidden');
+            }
+        });
+
+        document.getElementById('ingest-btn').addEventListener('click', async () => {
+            const file = document.getElementById('pdf-upload').files[0];
+            const title = document.getElementById('doc-title').value || file.name;
+            const logEl = document.getElementById('admin-log');
+            const log = msg => { logEl.innerHTML += `<div>> ${msg}</div>`; logEl.scrollTop = logEl.scrollHeight; };
+            
+            logEl.classList.remove('hidden');
+            document.getElementById('ingest-btn').disabled = true;
+            log("Initializing PDF Parser Engine...");
+
+            try {
+                const pdf = await pdfjsLib.getDocument({data: await file.arrayBuffer()}).promise;
+                log(`Successfully loaded ${pdf.numPages} pages. Extracting text...`);
+                
+                let newChunks = [];
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const content = await page.getTextContent();
+                    const text = content.items.map(it => it.str).join(' ').replace(/\s+/g, ' ').trim();
+                    
+                    if (text.length > 50) newChunks.push({ doc: title, page: i, text });
+                    if (i % 50 === 0) log(`Processed ${i}/${pdf.numPages} pages...`);
+                }
+
+                log("Extraction complete. Pushing to Global Cloud Storage...");
+                
+                memoryCache.push(...newChunks);
+                globalDb.totalPages = memoryCache.length;
+                
+                const SHARD_SIZE = 150;
+                let shards = 0;
+                for (let i = 0; i < memoryCache.length; i += SHARD_SIZE) {
+                    const chunk = memoryCache.slice(i, i + SHARD_SIZE);
+                    await puter.kv.set(`saas_kb_shard_${shards}`, JSON.stringify({ chunks: chunk }));
+                    shards++;
+                }
+                
+                globalDb.shards = shards;
+                await puter.kv.set(GLOBAL_KB_KEY, JSON.stringify(globalDb));
+                
+                log("SUCCESS. Fleet manuals updated globally.");
+                document.getElementById('db-stats').textContent = `${globalDb.totalPages} pages indexed`;
+                
+                setTimeout(() => toggleAdmin(false), 2000);
+            } catch (e) {
+                log(`<span class="text-rose-500">FAILURE: ${e.message}</span>`);
+            } finally {
+                document.getElementById('ingest-btn').disabled = false;
+            }
+        });
+
+        function toggleAdmin(show) { document.getElementById('admin-modal').style.display = show ? 'flex' : 'none'; }
+        function toggleSource(show) { document.getElementById('source-modal').style.display = show ? 'flex' : 'none'; }
+        function scrollToBottom() { const c = document.getElementById('chat-container'); c.scrollTop = c.scrollHeight; }
+        
+        function toggleInput(enabled) { 
+            document.getElementById('chat-input').disabled = !enabled; 
+            document.getElementById('send-btn').disabled = !enabled; 
+            if(enabled) document.getElementById('chat-input').focus();
+        }
+
+        function setupInputBehavior() {
+            const tx = document.getElementById('chat-input');
+            tx.addEventListener('input', function() { this.style.height = 'auto'; this.style.height = (this.scrollHeight) + 'px'; });
+            tx.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleQuery(); } });
+            document.getElementById('send-btn').addEventListener('click', handleQuery);
+            document.getElementById('admin-toggle').addEventListener('click', () => toggleAdmin(true));
         }
     </script>
 </body>
